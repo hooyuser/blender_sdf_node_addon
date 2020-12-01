@@ -13,7 +13,7 @@
 
 import bpy
 import nodeitems_utils
-import redrawViewport
+from .redrawViewport import Draw
 
 bl_info = {
     "name": "sdf node",
@@ -172,7 +172,7 @@ class ViewerNode(CustomNode):
     bl_icon = 'PLUS'
 
     def redraw3DViewport(self, context):
-        redrawViewport.Draw.refreshViewport(self.enabled)
+        Draw.refreshViewport(self.enabled)
 
     enabled = bpy.props.BoolProperty(name="Enabled",
                                      default=False,
@@ -271,6 +271,7 @@ def register():
 # for unloading we define the unregistering of all defined classes
 def unregister():
     # we unregister our node categories first
+    Draw.refreshViewport(False)
     nodeitems_utils.unregister_node_categories("CUSTOM_NODES")
     # then we unregister all classes from the blender
     for cl in classes:

@@ -1,4 +1,5 @@
 import bpy
+import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
 import math
@@ -42,7 +43,7 @@ class Draw(object):
         return length(samplePoint) - 1.0;
     }
 
-    float sceneSDF(vec3 samplePoint) 
+    float sceneSDF(vec3 samplePoint)
     {
         return sphereSDF(samplePoint);
     }
@@ -55,8 +56,9 @@ class Draw(object):
         k.yxy*sceneSDF(p + k.yxy*h) +
         k.xxx*sceneSDF(p + k.xxx*h));
     }
-        
-    float shortestDistanceToSurface(vec3 eye, vec3 marchingDirection, float start, float end)
+
+    float shortestDistanceToSurface(
+        vec3 eye, vec3 marchingDirection, float start, float end)
     {
         float depth = start;
         for (int i = 0; i < MAX_MARCHING_STEPS; i++)
@@ -82,13 +84,15 @@ class Draw(object):
         float specular = 0.5;
 
         vec3 n = calcNormal(p);
-        
+
         vec3 light = 20.0 * normalize(LightLoc);
         vec3 light_color = 20.0 * vec3(1.0,1.0,1.0);
 
         float falloffLength = dot(light - p, light - p);
-        vec3 l = (light - p)/sqrt(falloffLength);//vector from sample point to light
-        vec3 h = normalize(v + l);//normal vector of the microface at the sample point
+        //l: vector from sample point to light
+        vec3 l = (light - p)/sqrt(falloffLength);
+        //h: normal vector of the microface at the sample point
+        vec3 h = normalize(v + l);
         float a = roughness * roughness;
         float dotNL = clamp (dot (n, l), EPSILON, UPPER);
         float dotNV = clamp (dot (n, v), EPSILON, UPPER);
@@ -99,16 +103,19 @@ class Draw(object):
         float D = a * a / (PI * d * d);//GGX
         float Vis_SmithV = dotNL * (dotNV * (1. - a) + a);
         float Vis_SmithL = dotNV * (dotNL * (1. - a) + a);
-        float Vis = 0.5 / (Vis_SmithV + Vis_SmithL);// VIS = G / (4. * dotNV * dotNL)
+        // VIS = G / (4. * dotNV * dotNL)
+        float Vis = 0.5 / (Vis_SmithV + Vis_SmithL);
         vec3 F0 = mix(vec3(0.16 * specular * specular), baseColor, metalness);
-        vec3 F = F0 + (1. - F0) * (1. - dotHV) * (1. - dotHV) * (1. - dotHV) * (1. - dotHV) * (1. - dotHV);
+        vec3 F = F0 + (1. - F0) * (1. - dotHV) * (1. - dotHV)
+            * (1. - dotHV) * (1. - dotHV) * (1. - dotHV);
         vec3 kD = (1. - F) * (1. - metalness);
         vec3 f = kD * baseColor / PI + F * D * Vis;
-        vec3 c = PI * f * light_color * dotNL * 17. / falloffLength + vec3(0.15);
-        return vec4(c,1.0) ;
+        vec3 c = PI * f * light_color * dotNL * 17.
+            / falloffLength + vec3(0.15);
+        return vec4(c,1.0);
     }
 
-    vec3 rayDirection(vec2 fragCoord) 
+    vec3 rayDirection(vec2 fragCoord)
     {
         vec3 outer = vec3((2.0 * fragCoord.x / Size.x) - 1.0,
                         (2.0 * fragCoord.y / Size.y) - 1.0,
@@ -121,17 +128,9 @@ class Draw(object):
 
     void main()
     {
-        vec3 outer = vec3((2.0 * Size.x/2.0 / Size.x) - 1.0,
-                        (2.0 * Size.y / Size.y) - 1.0,
-                        -0.5);
-        float w = dot(outer, PersInv[3].xyz) + PersInv[3][3];
-
-        vec3 t = vec3(ViewInv[0].w,ViewInv[1].w,ViewInv[2].w);
-        vec3 s = ( vec4(outer, 1.0)*PersInv ).xyz ;
-        vec3 func = normalize(s / w- t);
-
         vec3 dir = rayDirection(position);
-        float dist = shortestDistanceToSurface(CamLoc, dir, MIN_DIST, MAX_DIST);
+        float dist = shortestDistanceToSurface(CamLoc, dir,
+            MIN_DIST, MAX_DIST);
 
         if (dist > MAX_DIST - EPSILON) {
             // Didn't hit anything
@@ -180,15 +179,13 @@ class Draw(object):
     indices = ((0, 1, 2), (2, 1, 3))
 
     @classmethod
-    def tag_redraw_all_3dviews():
+    def tag_redraw_all_3dviews(cls):
         for window in bpy.context.window_manager.windows:
             for area in window.screen.areas:
                 if area.type == 'VIEW_3D':
                     for region in area.regions:
                         if region.type == 'WINDOW':
                             region.tag_redraw()
-
-    tag_redraw_all_3dviews()
 
     @classmethod
     def draw(cls):
@@ -211,6 +208,7 @@ class Draw(object):
         shader = gpu.types.GPUShader(cls.v_, cls.f_)
 
         def draw():
+            bgl.glEnable(bgl.GL_BLEND)
             shader.bind()
             cls.update_config()
             [width, height] = cls.config["size"]
