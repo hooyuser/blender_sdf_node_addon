@@ -44,6 +44,7 @@ class CustomNodeTree(bpy.types.NodeTree):
 class CustomNode(bpy.types.Node):
     # this line makes the node visible only to the 'CustomNodeTree'
     #   node tree, essentially checking context
+
     @classmethod
     def poll(cls, ntree):
         return ntree.bl_idname == 'CustomNodeTree'
@@ -108,6 +109,13 @@ class SphereSDFNode(CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
+    def gen_glsl(self):
+        loc = self.inputs[1].default_value
+        glsl_code = '''
+        d_{}=length(p-vec3({},{},{}))-s;
+        '''.format(self.index, loc[0], loc[1], loc[2])
+        return glsl_code
+
 
 class BoxSDFNode(CustomNode):
     '''A simple input node'''
@@ -129,6 +137,14 @@ class BoxSDFNode(CustomNode):
         self.inputs.new('NodeSocketVectorTranslation', "Location")
 
         self.outputs.new('NodeSocketFloat', "Distance")
+
+    def gen_glsl(self):
+        loc = self.inputs[1].default_value
+        glsl_code = '''
+        vec3 q = abs(p) - vec3({},{},{});
+        d_{}=length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+        '''.format(loc[0], loc[1], loc[2], self.index)
+        return glsl_code
 
 
 operationItems = [("UNION", "Union", "Union", "", 0),
@@ -163,6 +179,17 @@ class BoolNode(CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
+    def gen_glsl(self):
+        if self.operation == "UNION":
+            glsl_code = '''
+            d_=min(d_,d_);
+            '''
+        else:
+            glsl_code = '''
+            d_=min(d_,d_);
+            '''
+        return glsl_code
+
 
 class ViewerNode(CustomNode):
     '''A simple input node'''
@@ -182,6 +209,7 @@ class ViewerNode(CustomNode):
         layout.prop(self, "enabled", text="Show SDF")
 
     def init(self, context):
+        self.index = 0
         self.inputs.new('NodeSocketFloat', "Distance")
         self.inputs[0].hide_value = True
 

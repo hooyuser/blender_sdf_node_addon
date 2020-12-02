@@ -6,6 +6,25 @@ import math
 import mathutils
 
 
+class NodeList(object):
+    def __init__(self):
+        self.node_list = []
+        self.glsl_text = ''
+
+    def followLinks(self, node_in):
+        for n_inputs in node_in.inputs:
+            for node_links in n_inputs.links:
+                node_name = node_links.from_node.name
+                # print("going to " + node_name)
+                node = bpy.data.node_groups["NodeTree"].nodes[node_name]
+
+                if not hasattr(node, 'index'):
+                    setattr(node, "index", len(self.node_list))
+                    self.node_list.append(node)
+                    self.glsl_text += node.gen_glsl()
+                self.followLinks(node_links.from_node)
+
+
 class Draw(object):
     handlers = []
     config = {"size": [0, 0]}
@@ -205,6 +224,12 @@ class Draw(object):
 
     @classmethod
     def gen_draw_handler(cls):
+
+        print('GLSL:\n')
+        glsl_node = NodeList()
+        glsl_node.followLinks(bpy.data.node_groups["NodeTree"].nodes["Viewer"])
+        print(glsl_node.glsl_text)
+
         shader = gpu.types.GPUShader(cls.v_, cls.f_)
 
         def draw():
