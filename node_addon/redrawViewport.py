@@ -4,25 +4,41 @@ import gpu
 from gpu_extras.batch import batch_for_shader
 import math
 import mathutils
+import inspect
+from .addonStatus import Status
 
 
 class NodeList(object):
+
+    tree = None
+
     def __init__(self):
         self.node_list = []
         self.glsl_text = ''
 
+    def gen_node_list(self, node_in):
+        self.glsl_text = ''
+        self.tree = bpy.context.space_data.edit_tree
+        for node in self.tree.nodes:
+            node.index = -1
+        self.followLinks(node_in)
+        self.glsl_text += '''
+            return d_{};'''.format(len(self.node_list) - 1)
+        inspect.cleandoc(self.glsl_text)
+
     def followLinks(self, node_in):
+
         for n_inputs in node_in.inputs:
             for node_links in n_inputs.links:
-                node_name = node_links.from_node.name
-                # print("going to " + node_name)
-                node = bpy.data.node_groups["NodeTree"].nodes[node_name]
-
-                if not hasattr(node, 'index'):
-                    setattr(node, "index", len(self.node_list))
-                    self.node_list.append(node)
-                    self.glsl_text += node.gen_glsl()
                 self.followLinks(node_links.from_node)
+                node_name = node_links.from_node.name
+                node = self.tree.nodes[node_name]
+
+                if node.index < 0:
+                    node.index = len(self.node_list)
+                    self.node_list.append(node)
+                    print(node.name, ':', node.index)
+                    self.glsl_text += node.gen_glsl()
 
 
 class Draw(object):
@@ -41,7 +57,7 @@ class Draw(object):
     }
     '''
 
-    f_ = '''
+    f_1 = '''
     in vec2 position;
     out vec4 fragColor;
     uniform mat4 PersInv;
@@ -53,7 +69,7 @@ class Draw(object):
     #define PI 3.1415926535
     #define EPSILON 0.001
     #define UPPER 0.9999
-    #define MAX_MARCHING_STEPS 30
+    #define MAX_MARCHING_STEPS 60
     #define MIN_DIST 0.0
     #define MAX_DIST 1000.0
 
@@ -62,9 +78,11 @@ class Draw(object):
         return length(samplePoint) - 1.0;
     }
 
-    float sceneSDF(vec3 samplePoint)
+    float sceneSDF(vec3 p)
     {
-        return sphereSDF(samplePoint);
+    '''
+
+    f_2 = '''
     }
 
     vec3 calcNormal(vec3  p) { // for function f(p)
@@ -104,12 +122,12 @@ class Draw(object):
 
         vec3 n = calcNormal(p);
 
-        vec3 light = 20.0 * normalize(LightLoc);
-        vec3 light_color = 20.0 * vec3(1.0,1.0,1.0);
+        vec3 light = 200.0 * normalize(LightLoc);
+        vec3 light_color = 0.04 * vec3(1.0,1.0,1.0);
 
-        float falloffLength = dot(light - p, light - p);
+        //float falloffLength = dot(light - p, light - p);
         //l: vector from sample point to light
-        vec3 l = (light - p)/sqrt(falloffLength);
+        vec3 l = normalize(light - p);
         //h: normal vector of the microface at the sample point
         vec3 h = normalize(v + l);
         float a = roughness * roughness;
@@ -129,8 +147,7 @@ class Draw(object):
             * (1. - dotHV) * (1. - dotHV) * (1. - dotHV);
         vec3 kD = (1. - F) * (1. - metalness);
         vec3 f = kD * baseColor / PI + F * D * Vis;
-        vec3 c = PI * f * light_color * dotNL * 17.
-            / falloffLength + vec3(0.15);
+        vec3 c = PI * f * light_color * dotNL * 17. + vec3(0.15);
         return vec4(c,1.0);
     }
 
@@ -222,15 +239,35 @@ class Draw(object):
                                  indices=cls.indices)
         batch.draw(cls.shader)
 
+    glsl_nodes = NodeList()
+
     @classmethod
     def gen_draw_handler(cls):
 
         print('GLSL:\n')
-        glsl_node = NodeList()
-        glsl_node.followLinks(bpy.data.node_groups["NodeTree"].nodes["Viewer"])
-        print(glsl_node.glsl_text)
+        # nodetree = bpy.data.node_groups[
+        # "NodeTree"]   bpy.data.node_groups["NodeTree"].nodes.active   update_tag  interface_update
+        # no = nodetree.nodes[
+        # "Sphere SDF"]   bpy.data.node_groups["NodeTree"].nodes["Sphere SDF"].socket_value_update()
+        # x = no.inputs[0]
+        # y = x.default_value
+        # print(y)
+        # print('active_node', bpy.context.space_data.edit_tree)
 
-        shader = gpu.types.GPUShader(cls.v_, cls.f_)
+        # class Node_OT_test(Operator):
+        # bl_idname = "node.test"
+        # bl_label  = "Test"
+        # def execute(self, context):
+        # selection = context.selected_nodes
+        #     print(selection)
+        # return {'FINISHED'}
+
+        cls.glsl_nodes.gen_node_list(
+            bpy.context.space_data.edit_tree.nodes["Viewer"])
+        print(cls.glsl_nodes.glsl_text)
+
+        shader = gpu.types.GPUShader(
+            cls.v_, cls.f_1 + cls.glsl_nodes.glsl_text + cls.f_2)
 
         def draw():
             bgl.glEnable(bgl.GL_BLEND)
@@ -264,3 +301,14 @@ class Draw(object):
                     cls.handlers[0], 'WINDOW')
                 del cls.handlers[0]
                 cls.tag_redraw_all_3dviews()
+
+    @classmethod
+    def every_second(cls):
+        if Status.active_nodetree():
+            v = bpy.data.node_groups[Status.active_nodetree()].nodes.get(
+                "Viewer")
+            if v:
+                if v.enabled:
+                    Draw.refreshViewport(False)
+                    Draw.refreshViewport(True)
+            return 0.1

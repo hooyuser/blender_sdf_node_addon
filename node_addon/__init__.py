@@ -14,6 +14,7 @@
 import bpy
 import nodeitems_utils
 from .redrawViewport import Draw
+# from .addonStatus import Status
 
 bl_info = {
     "name": "sdf node",
@@ -44,10 +45,19 @@ class CustomNodeTree(bpy.types.NodeTree):
 class CustomNode(bpy.types.Node):
     # this line makes the node visible only to the 'CustomNodeTree'
     #   node tree, essentially checking context
+    bpy.types.Node.index = bpy.props.IntProperty()
 
     @classmethod
     def poll(cls, ntree):
         return ntree.bl_idname == 'CustomNodeTree'
+
+    def update(self):
+        for node in bpy.context.space_data.edit_tree.nodes:
+            if node.bl_idname == 'Viewer':
+                print('has Viewer')
+                if node.enabled:
+                    Draw.refreshViewport(False)
+                    Draw.refreshViewport(True)
 
 
 class CustomSimpleInputNode(CustomNode):
@@ -101,7 +111,16 @@ class SphereSDFNode(CustomNode):
     bl_label = 'Sphere SDF'
     bl_icon = 'PLUS'
 
+    def redraw(self):
+        v = bpy.data.node_groups["NodeTree"].nodes.get("Viewer")
+        if v:
+            if v.enabled:
+                Draw.refreshViewport(False)
+                Draw.refreshViewport(True)
+
     def init(self, context):
+        self.index = -1
+
         self.inputs.new('NodeSocketFloat', "Radius")
         self.inputs[0].default_value = 1
 
@@ -112,8 +131,10 @@ class SphereSDFNode(CustomNode):
     def gen_glsl(self):
         loc = self.inputs[1].default_value
         glsl_code = '''
-        d_{}=length(p-vec3({},{},{}))-s;
-        '''.format(self.index, loc[0], loc[1], loc[2])
+            float d_{}=length(p-vec3({},{},{}))-{};
+        '''.format(self.index, loc[0], loc[1], loc[2],
+                   self.inputs[0].default_value)
+
         return glsl_code
 
 
@@ -125,6 +146,7 @@ class BoxSDFNode(CustomNode):
     bl_icon = 'PLUS'
 
     def init(self, context):
+
         self.inputs.new('NodeSocketFloat', "Length")
         self.inputs[0].default_value = 1
 
@@ -139,11 +161,14 @@ class BoxSDFNode(CustomNode):
         self.outputs.new('NodeSocketFloat', "Distance")
 
     def gen_glsl(self):
-        loc = self.inputs[1].default_value
+        loc = self.inputs[3].default_value
         glsl_code = '''
-        vec3 q = abs(p) - vec3({},{},{});
-        d_{}=length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
-        '''.format(loc[0], loc[1], loc[2], self.index)
+            vec3 q = abs(p - vec3({},{},{})) - vec3({},{},{});
+            float d_{}=length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+        '''.format(loc[0], loc[1], loc[2], self.inputs[0].default_value,
+                   self.inputs[1].default_value, self.inputs[2].default_value,
+                   self.index)
+
         return glsl_code
 
 
@@ -171,6 +196,7 @@ class BoolNode(CustomNode):
         return operationLabels[self.operation]
 
     def init(self, context):
+
         self.inputs.new('NodeSocketFloat', "Distance 1")
         self.inputs[0].hide_value = True
 
@@ -180,14 +206,21 @@ class BoolNode(CustomNode):
         self.outputs.new('NodeSocketFloat', "Distance")
 
     def gen_glsl(self):
+        input_0 = 'd_' + str(bpy.data.node_groups["NodeTree"].nodes[
+            self.inputs[0].links[0].from_node.name].index
+                             ) if self.inputs[0].links else '2.0 * MAX_DIST'
+        input_1 = 'd_' + str(bpy.data.node_groups["NodeTree"].nodes[
+            self.inputs[1].links[0].from_node.name].index
+                             ) if self.inputs[1].links else '2.0 * MAX_DIST'
         if self.operation == "UNION":
             glsl_code = '''
-            d_=min(d_,d_);
-            '''
+            float d_{}=min({},{});
+            '''.format(self.index, input_0, input_1)
         else:
             glsl_code = '''
-            d_=min(d_,d_);
-            '''
+            float d_{}=max({},{});
+            '''.format(self.index, input_0, input_1)
+
         return glsl_code
 
 
@@ -208,8 +241,12 @@ class ViewerNode(CustomNode):
     def draw_buttons(self, context, layout):
         layout.prop(self, "enabled", text="Show SDF")
 
+    # def update(self):
+    #     if self.inputs[0].links:
+    #         Draw.refreshViewport(False)
+    #         Draw.refreshViewport(True)
+
     def init(self, context):
-        self.index = 0
         self.inputs.new('NodeSocketFloat', "Distance")
         self.inputs[0].hide_value = True
 
@@ -283,6 +320,47 @@ classes = (CustomNodeTree, CustomSimpleInputNode, SphereSDFNode, BoxSDFNode,
            BoolNode, ViewerNode)
 
 
+def gen_update_view(area, space_data):
+    def update_view(scene):
+        if area:
+            print('bpy.context.area')
+            if area.ui_type == 'CustomNodeTree':
+                if hasattr(space_data, 'edit_tree'):
+                    print(space_data.edit_tree.name)
+                    for node in space_data.edit_tree.nodes:
+                        if node.bl_idname == 'Viewer':
+                            print('has Viewer')
+                            if node.enabled:
+                                Draw.refreshViewport(False)
+                                Draw.refreshViewport(True)
+                            else:
+                                Draw.refreshViewport(False)
+
+    return update_view
+
+
+#  def update_view(scene):
+#         if bpy.context.area:
+#             print('bpy.context.area')
+#             if bpy.context.area.ui_type == 'CustomNodeTree':
+#                 if hasattr(bpy.context.space_data, 'edit_tree'):
+#                     print(bpy.context.space_data.edit_tree.name)
+#                     for node in bpy.context.space_data.edit_tree.nodes:
+#                         if node.bl_idname == 'Viewer':
+#                             print('has Viewer')
+#                             if node.enabled:
+#                                 Draw.refreshViewport(False)
+#                                 Draw.refreshViewport(True)
+#                             else:
+#                                 Draw.refreshViewport(False)
+
+
+def load_handler(scene):
+    bpy.app.handlers.depsgraph_update_post.append(
+        gen_update_view(bpy.context.area, bpy.context.space_data))
+    print(bpy.context.area, bpy.context.space_data)
+
+
 # for loading we define the registering of all defined classes
 def register():
     # we register all our classes into blender
@@ -294,16 +372,20 @@ def register():
     # the second is the actual list of node categories to be registered under
     #   this name
     nodeitems_utils.register_node_categories("CUSTOM_NODES", node_categories)
+    # bpy.app.timers.register(Draw.every_second)
+    bpy.app.handlers.load_post.append(load_handler)
 
 
 # for unloading we define the unregistering of all defined classes
 def unregister():
     # we unregister our node categories first
     Draw.refreshViewport(False)
-    nodeitems_utils.unregister_node_categories("CUSTOM_NODES")
+    bpy.app.handlers.load_post.remove(load_handler)
+
     # then we unregister all classes from the blender
     for cl in classes:
         bpy.utils.unregister_class(cl)
+    nodeitems_utils.unregister_node_categories("CUSTOM_NODES")
 
 
 if __name__ == '__main__':
