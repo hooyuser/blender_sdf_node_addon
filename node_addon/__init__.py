@@ -10,26 +10,18 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-import inspect
 
-import bpy
 import nodeitems_utils
 
+from . import auto_load
 from .redrawViewport import Draw
-from .base_types.base_node_tree import CustomNodeTree
-from .base_types.base_node_socket import (CustomNodeSocket, SdfNodeSocketFloat,
-                                          SdfNodeSocketVectorTranslation)
-
-from .nodes import *
-
-# from .addonStatus import Status
 
 bl_info = {
     "name": "sdf node",
     "author": "DerivedCat",
     "description": "",
     "blender": (2, 90, 0),
-    "version": (0, 0, 1),
+    "version": (0, 0, 2),
     "location": "",
     "warning": "",
     "category": "Generic"
@@ -103,47 +95,17 @@ node_categories = [
         ]),
 ]
 
-classes = (CustomNodeSocket, CustomNodeTree, SdfNodeSocketFloat,
-           SdfNodeSocketVectorTranslation)
-
-node_classes = [
-    globals()[x] for x in dir(nodes) if inspect.isclass(getattr(nodes, x))
-]
+auto_load.init()
 
 
-# for loading we define the registering of all defined classes
 def register():
-    # we register all our classes into blender
-
-    for cl in classes:
-        bpy.utils.register_class(cl)
-
-    for cl in node_classes:
-        bpy.utils.register_class(cl)
-
-    # we register the node categories with the node tree
-    # the first argument is a string that is the idname for this collection
-    #   of categories
-    # the second is the actual list of node categories to be registered under
-    #   this name
+    auto_load.register()
     nodeitems_utils.register_node_categories("CUSTOM_NODES", node_categories)
-    # bpy.app.timers.register(Draw.every_second)
-    # bpy.app.handlers.load_post.append(load_handler)
 
 
-# for unloading we define the unregistering of all defined classes
 def unregister():
-    # we unregister our node categories first
     Draw.refreshViewport(False)
-    # bpy.app.handlers.load_post.remove(load_handler)
-
-    # then we unregister all classes from the blender
-    for cl in classes:
-        bpy.utils.unregister_class(cl)
-
-    for cl in node_classes:
-        bpy.utils.unregister_class(cl)
-
+    auto_load.unregister()
     nodeitems_utils.unregister_node_categories("CUSTOM_NODES")
 
 

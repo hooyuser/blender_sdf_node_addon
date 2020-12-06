@@ -3,7 +3,7 @@ import bpy
 from ...base_types.base_node import CustomNode
 
 
-class CustomSimpleInputNode(CustomNode):
+class CustomSimpleInputNode(bpy.types.Node, CustomNode):
     # we can add a docstring that will be interpreted as description
     '''A simple input node'''
     # optionally we define an id that we can reference the node by

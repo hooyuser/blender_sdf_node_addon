@@ -3,7 +3,7 @@ from ...base_types.base_node import CustomNode
 from ...redrawViewport import Draw
 
 
-class ViewerNode(CustomNode):
+class ViewerNode(bpy.types.Node, CustomNode):
     '''A simple input node'''
 
     bl_idname = 'Viewer'

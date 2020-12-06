@@ -1,7 +1,8 @@
+import bpy
 from ...base_types.base_node import CustomNode
 
 
-class BoxSDFNode(CustomNode):
+class BoxSDFNode(bpy.types.Node, CustomNode):
     '''A simple input node'''
 
     bl_idname = 'BoxSDF'

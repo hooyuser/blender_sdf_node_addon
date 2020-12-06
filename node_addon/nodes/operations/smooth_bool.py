@@ -3,7 +3,7 @@ from ...base_types.base_node import CustomNode
 from ...redrawViewport import Draw
 
 
-class SmoothBoolNode(CustomNode):
+class SmoothBoolNode(bpy.types.Node, CustomNode):
     '''A simple input node'''
 
     bl_idname = 'SmoothBool'

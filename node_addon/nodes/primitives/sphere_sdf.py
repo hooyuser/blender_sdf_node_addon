@@ -1,7 +1,8 @@
+import bpy
 from ...base_types.base_node import CustomNode
 
 
-class SphereSDFNode(CustomNode):
+class SphereSDFNode(bpy.types.Node, CustomNode):
     '''A simple input node'''
 
     bl_idname = 'SphereSDF'
