@@ -42,6 +42,92 @@ class CustomNodeTree(bpy.types.NodeTree):
     bl_icon = 'BLENDER'
 
 
+class CustomNodeSocket(bpy.types.NodeSocket):
+    bl_idname = "CustomNodeSocket"
+    bl_label = "Custom Node Socket"
+
+    def my_update_callback(self, context):
+        print('callback')
+
+    # Enum items list
+    my_items = [("DOWN", "Down", "Where your feet are"),
+                ("UP", "Up", "Where your head should be"),
+                ("LEFT", "Left", "Not right"), ("RIGHT", "Right", "Not left")]
+
+    myEnumProperty = bpy.props.EnumProperty(name="Direction",
+                                            description="Just an example",
+                                            items=my_items,
+                                            default='UP')
+
+    myIntProp = bpy.props.IntProperty()
+
+    translation = bpy.props.FloatVectorProperty(subtype='TRANSLATION')
+
+    # Optional function for drawing the socket input value
+    def draw(self, context, layout, node, text):
+        if self.is_output or self.is_linked:
+            layout.label(text=self.name)
+        else:
+            col = layout.column()
+            col.prop(self, "translation", text=self.name)
+
+    def draw_color(self, context, node):
+        return (1, 1, 1, 1)
+
+
+def update_callback():
+    for node in bpy.context.space_data.edit_tree.nodes:
+        if node.bl_idname == 'Viewer':
+            print('has Viewer')
+            if node.enabled:
+                Draw.refreshViewport(False)
+                Draw.refreshViewport(True)
+
+
+class SdfNodeSocketFloat(bpy.types.NodeSocket):
+    bl_idname = "SdfNodeSocketFloat"
+    bl_label = "SDF Node Socket Float"
+
+    def default_value_callback(self, context):
+        update_callback()
+
+    default_value = bpy.props.FloatProperty(subtype='UNSIGNED',
+                                            min=0.0,
+                                            update=default_value_callback)
+
+    # Optional function for drawing the socket input value
+    def draw(self, context, layout, node, text):
+        if self.is_output or self.is_linked:
+            layout.label(text=self.name)
+        else:
+            layout.prop(self, "default_value", text=self.name)
+
+    def draw_color(self, context, node):
+        return (0.443, 0.588, 0.624, 1)
+
+
+class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket):
+    bl_idname = "SdfNodeSocketVectorTranslation"
+    bl_label = "SDF Node Socket Vector Translation"
+
+    def default_value_callback(self, context):
+        update_callback()
+
+    default_value = bpy.props.FloatVectorProperty(
+        subtype='TRANSLATION', update=default_value_callback)
+
+    # Optional function for drawing the socket input value
+    def draw(self, context, layout, node, text):
+        if self.is_output or self.is_linked:
+            layout.label(text='Location')
+        else:
+            col = layout.column()
+            col.prop(self, "default_value", text='Location')
+
+    def draw_color(self, context, node):
+        return (0.2, 0.2, 0.8, 1)
+
+
 class CustomNode(bpy.types.Node):
     # this line makes the node visible only to the 'CustomNodeTree'
     #   node tree, essentially checking context
@@ -52,12 +138,7 @@ class CustomNode(bpy.types.Node):
         return ntree.bl_idname == 'CustomNodeTree'
 
     def update(self):
-        for node in bpy.context.space_data.edit_tree.nodes:
-            if node.bl_idname == 'Viewer':
-                print('has Viewer')
-                if node.enabled:
-                    Draw.refreshViewport(False)
-                    Draw.refreshViewport(True)
+        update_callback()
 
 
 class CustomSimpleInputNode(CustomNode):
@@ -85,6 +166,7 @@ class CustomSimpleInputNode(CustomNode):
 
         self.inputs.new('NodeSocketInt', "input1")
         self.inputs.new('NodeSocketInt', "input2")
+        self.inputs.new("CustomNodeSocket", "Custom in")
 
     # copy function is ran to initialize a copied node from
     #   an existing one
@@ -121,10 +203,10 @@ class SphereSDFNode(CustomNode):
     def init(self, context):
         self.index = -1
 
-        self.inputs.new('NodeSocketFloat', "Radius")
+        self.inputs.new('SdfNodeSocketFloat', "Radius")
         self.inputs[0].default_value = 1
 
-        self.inputs.new('NodeSocketVectorTranslation', "Location")
+        self.inputs.new('SdfNodeSocketVectorTranslation', "Location")
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
@@ -147,16 +229,16 @@ class BoxSDFNode(CustomNode):
 
     def init(self, context):
 
-        self.inputs.new('NodeSocketFloat', "Length")
+        self.inputs.new('SdfNodeSocketFloat', "Length")
         self.inputs[0].default_value = 1
 
-        self.inputs.new('NodeSocketFloat', "Width")
+        self.inputs.new('SdfNodeSocketFloat', "Width")
         self.inputs[1].default_value = 1
 
-        self.inputs.new('NodeSocketFloat', "Height")
+        self.inputs.new('SdfNodeSocketFloat', "Height")
         self.inputs[2].default_value = 1
 
-        self.inputs.new('NodeSocketVectorTranslation', "Location")
+        self.inputs.new('SdfNodeSocketVectorTranslation', "Location")
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
@@ -203,7 +285,7 @@ class BoolNode(CustomNode):
         self.inputs.new('NodeSocketFloat', "Distance 2")
         self.inputs[1].hide_value = True
 
-        self.outputs.new('NodeSocketFloat', "Distance")
+        self.outputs.new('SdfNodeSocketFloat', "Distance")
 
     def gen_glsl(self):
         input_0 = 'd_' + str(bpy.data.node_groups["NodeTree"].nodes[
@@ -249,6 +331,9 @@ class ViewerNode(CustomNode):
     def init(self, context):
         self.inputs.new('NodeSocketFloat', "Distance")
         self.inputs[0].hide_value = True
+
+    def free(self):
+        Draw.refreshViewport(False)
 
 
 class CustomNodeCategory(nodeitems_utils.NodeCategory):
@@ -316,8 +401,9 @@ node_categories = [
         ]),
 ]
 
-classes = (CustomNodeTree, CustomSimpleInputNode, SphereSDFNode, BoxSDFNode,
-           BoolNode, ViewerNode)
+classes = (CustomNodeSocket, CustomNodeTree, CustomSimpleInputNode,
+           SdfNodeSocketFloat, SdfNodeSocketVectorTranslation, SphereSDFNode,
+           BoxSDFNode, BoolNode, ViewerNode)
 
 
 def gen_update_view(area, space_data):
@@ -364,6 +450,7 @@ def load_handler(scene):
 # for loading we define the registering of all defined classes
 def register():
     # we register all our classes into blender
+
     for cl in classes:
         bpy.utils.register_class(cl)
     # we register the node categories with the node tree
@@ -373,14 +460,14 @@ def register():
     #   this name
     nodeitems_utils.register_node_categories("CUSTOM_NODES", node_categories)
     # bpy.app.timers.register(Draw.every_second)
-    bpy.app.handlers.load_post.append(load_handler)
+    # bpy.app.handlers.load_post.append(load_handler)
 
 
 # for unloading we define the unregistering of all defined classes
 def unregister():
     # we unregister our node categories first
     Draw.refreshViewport(False)
-    bpy.app.handlers.load_post.remove(load_handler)
+    # bpy.app.handlers.load_post.remove(load_handler)
 
     # then we unregister all classes from the blender
     for cl in classes:

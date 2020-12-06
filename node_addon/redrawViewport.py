@@ -17,6 +17,7 @@ class NodeList(object):
         self.glsl_text = ''
 
     def gen_node_list(self, node_in):
+        self.node_list = []
         self.glsl_text = ''
         self.tree = bpy.context.space_data.edit_tree
         for node in self.tree.nodes:
@@ -69,9 +70,9 @@ class Draw(object):
     #define PI 3.1415926535
     #define EPSILON 0.001
     #define UPPER 0.9999
-    #define MAX_MARCHING_STEPS 60
+    #define MAX_MARCHING_STEPS 200
     #define MIN_DIST 0.0
-    #define MAX_DIST 1000.0
+    #define MAX_DIST 800.0
 
     float sphereSDF(vec3 samplePoint)
     {
