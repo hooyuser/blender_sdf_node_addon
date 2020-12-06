@@ -10,10 +10,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+import inspect
 
 import bpy
 import nodeitems_utils
+
 from .redrawViewport import Draw
+from .base_types.base_node import CustomNode
+from .nodes.viewer.viewer import ViewerNode
+from . import nodes
 # from .addonStatus import Status
 
 bl_info = {
@@ -26,6 +31,8 @@ bl_info = {
     "warning": "",
     "category": "Generic"
 }
+
+a = [globals()[x] for x in dir(nodes) if inspect.isclass(getattr(nodes, x))]
 
 
 class CustomNodeTree(bpy.types.NodeTree):
@@ -75,13 +82,13 @@ class CustomNodeSocket(bpy.types.NodeSocket):
         return (1, 1, 1, 1)
 
 
-def update_callback():
-    for node in bpy.context.space_data.edit_tree.nodes:
-        if node.bl_idname == 'Viewer':
-            print('has Viewer')
-            if node.enabled:
-                Draw.refreshViewport(False)
-                Draw.refreshViewport(True)
+# def update_callback():
+#     for node in bpy.context.space_data.edit_tree.nodes:
+#         if node.bl_idname == 'Viewer':
+#             print('has Viewer')
+#             if node.enabled:
+#                 Draw.refreshViewport(False)
+#                 Draw.refreshViewport(True)
 
 
 class SdfNodeSocketFloat(bpy.types.NodeSocket):
@@ -89,7 +96,7 @@ class SdfNodeSocketFloat(bpy.types.NodeSocket):
     bl_label = "SDF Node Socket Float"
 
     def default_value_callback(self, context):
-        update_callback()
+        Draw.update_callback()
 
     default_value = bpy.props.FloatProperty(subtype='UNSIGNED',
                                             min=0.0,
@@ -111,7 +118,7 @@ class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket):
     bl_label = "SDF Node Socket Vector Translation"
 
     def default_value_callback(self, context):
-        update_callback()
+        Draw.update_callback()
 
     default_value = bpy.props.FloatVectorProperty(
         subtype='TRANSLATION', update=default_value_callback)
@@ -128,17 +135,17 @@ class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket):
         return (0.2, 0.2, 0.8, 1)
 
 
-class CustomNode(bpy.types.Node):
-    # this line makes the node visible only to the 'CustomNodeTree'
-    #   node tree, essentially checking context
-    bpy.types.Node.index = bpy.props.IntProperty()
+# class CustomNode(bpy.types.Node):
+#     # this line makes the node visible only to the 'CustomNodeTree'
+#     #   node tree, essentially checking context
+#     bpy.types.Node.index = bpy.props.IntProperty()
 
-    @classmethod
-    def poll(cls, ntree):
-        return ntree.bl_idname == 'CustomNodeTree'
+#     @classmethod
+#     def poll(cls, ntree):
+#         return ntree.bl_idname == 'CustomNodeTree'
 
-    def update(self):
-        update_callback()
+#     def update(self):
+#         Draw.update_callback()
 
 
 class CustomSimpleInputNode(CustomNode):
@@ -245,19 +252,15 @@ class BoxSDFNode(CustomNode):
     def gen_glsl(self):
         loc = self.inputs[3].default_value
         glsl_code = '''
-            vec3 q = abs(p - vec3({},{},{})) - vec3({},{},{});
-            float d_{}=length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
-        '''.format(loc[0], loc[1], loc[2], self.inputs[0].default_value,
-                   self.inputs[1].default_value, self.inputs[2].default_value,
-                   self.index)
+            vec3 q_{} = abs(p - vec3({},{},{})) - vec3({},{},{});
+            float d_{} = length(max(q_{},0.0)) +
+                min(max(q_{}.x,max(q_{}.y,q_{}.z)),0.0);
+        '''.format(self.index, loc[0], loc[1], loc[2],
+                   self.inputs[0].default_value, self.inputs[1].default_value,
+                   self.inputs[2].default_value, self.index, self.index,
+                   self.index, self.index, self.index)
 
         return glsl_code
-
-
-operationItems = [("UNION", "Union", "Union", "", 0),
-                  ("SUBTRACT", "Subtract", "Subtract", "", 1)]
-
-operationLabels = {"UNION": "Union", "SUBTRACT": "Subtract"}
 
 
 class BoolNode(CustomNode):
@@ -267,18 +270,34 @@ class BoolNode(CustomNode):
     bl_label = 'Bool'
     bl_icon = 'PLUS'
 
+    operationItems = [
+        ("UNION", "Union", "Union", "", 0),
+        ("INTERSECT", "Intersect", "Intersect", "", 1),
+        ("SUBTRACT", "Subtract", "Subtract", "", 2),
+    ]
+
+    operationLabels = {
+        "UNION": "Union",
+        "INTERSECT": "Intersect",
+        "SUBTRACT": "Subtract"
+    }
+
+    def update_prop(self, context):
+        Draw.update_callback()
+
     operation = bpy.props.EnumProperty(name="Operation",
                                        default="UNION",
-                                       items=operationItems)
+                                       items=operationItems,
+                                       update=update_prop)
 
     def draw_buttons(self, context, layout):
+
         layout.prop(self, "operation", text="")
 
     def draw_label(self):
-        return operationLabels[self.operation]
+        return self.operationLabels[self.operation]
 
     def init(self, context):
-
         self.inputs.new('NodeSocketFloat', "Distance 1")
         self.inputs[0].hide_value = True
 
@@ -294,46 +313,128 @@ class BoolNode(CustomNode):
         input_1 = 'd_' + str(bpy.data.node_groups["NodeTree"].nodes[
             self.inputs[1].links[0].from_node.name].index
                              ) if self.inputs[1].links else '2.0 * MAX_DIST'
+
         if self.operation == "UNION":
             glsl_code = '''
             float d_{}=min({},{});
             '''.format(self.index, input_0, input_1)
-        else:
+        elif self.operation == "INTERSECT":
             glsl_code = '''
             float d_{}=max({},{});
+            '''.format(self.index, input_0, input_1)
+        else:
+            glsl_code = '''
+            float d_{}=max(-{},{});
             '''.format(self.index, input_0, input_1)
 
         return glsl_code
 
 
-class ViewerNode(CustomNode):
+class SmoothBoolNode(CustomNode):
     '''A simple input node'''
 
-    bl_idname = 'Viewer'
-    bl_label = 'Viewer'
+    bl_idname = 'SmoothBool'
+    bl_label = 'Smooth Bool'
     bl_icon = 'PLUS'
 
-    def redraw3DViewport(self, context):
-        Draw.refreshViewport(self.enabled)
+    operationItems = [
+        ("S_UNION", "Smooth Union", "Smooth Union", "", 0),
+        ("S_INTERSECT", "Smooth Intersect", "Smooth Intersect", "", 1),
+        ("S_UBTRACT", "Smooth Subtract", "Smooth Subtract", "", 2)
+    ]
 
-    enabled = bpy.props.BoolProperty(name="Enabled",
-                                     default=False,
-                                     update=redraw3DViewport)
+    operationLabels = {
+        "S_UNION": "Smooth Union",
+        "S_INTERSECT": "Smooth Intersect",
+        "S_SUBTRACT": "Smooth Subtract"
+    }
+
+    def update_prop(self, context):
+        Draw.update_callback()
+
+    operation = bpy.props.EnumProperty(name="Operation",
+                                       default="S_UNION",
+                                       items=operationItems,
+                                       update=update_prop)
 
     def draw_buttons(self, context, layout):
-        layout.prop(self, "enabled", text="Show SDF")
+        layout.prop(self, "operation", text="")
 
-    # def update(self):
-    #     if self.inputs[0].links:
-    #         Draw.refreshViewport(False)
-    #         Draw.refreshViewport(True)
+    def draw_label(self):
+        return self.operationLabels[self.operation]
 
     def init(self, context):
-        self.inputs.new('NodeSocketFloat', "Distance")
-        self.inputs[0].hide_value = True
 
-    def free(self):
-        Draw.refreshViewport(False)
+        self.inputs.new('SdfNodeSocketFloat', "Smoothness")
+        self.inputs[0].default_value = 0.25
+
+        self.inputs.new('NodeSocketFloat', "Distance 1")
+        self.inputs[1].hide_value = True
+
+        self.inputs.new('NodeSocketFloat', "Distance 2")
+        self.inputs[2].hide_value = True
+
+        self.outputs.new('SdfNodeSocketFloat', "Distance")
+
+    def gen_glsl(self):
+        k = self.inputs[0].default_value
+        input_1 = 'd_' + str(bpy.data.node_groups["NodeTree"].nodes[
+            self.inputs[1].links[0].from_node.name].index
+                             ) if self.inputs[1].links else '2.0 * MAX_DIST'
+        input_2 = 'd_' + str(bpy.data.node_groups["NodeTree"].nodes[
+            self.inputs[2].links[0].from_node.name].index
+                             ) if self.inputs[2].links else '2.0 * MAX_DIST'
+
+        if self.operation == "S_UNION":
+            glsl_code = '''
+            float h_{} = max({}-abs({}-{}),0.0);
+            float d_{} = min({},{}) - h_{}*h_{}*0.25/{};
+            '''.format(self.index, k, input_1, input_2, self.index, input_1,
+                       input_2, self.index, self.index, k)
+        elif self.operation == "S_INTERSECT":
+            glsl_code = '''
+            float h_{} = max({}-abs({}-{}),0.0);
+            float d_{} = max({},{}) + h_{}*h_{}*0.25/{};
+            '''.format(self.index, k, input_1, input_2, self.index, input_1,
+                       input_2, self.index, self.index, k)
+        else:
+            glsl_code = '''
+            float h_{} = max({}-abs(-{}-{}),0.0);
+            float d_{} = max(-{},{}) + h_{}*h_{}*0.25/{};
+            '''.format(self.index, k, input_1, input_2, self.index, input_1,
+                       input_2, self.index, self.index, k)
+
+        return glsl_code
+
+
+# class ViewerNode(CustomNode):
+#     '''A simple input node'''
+
+#     bl_idname = 'Viewer'
+#     bl_label = 'Viewer'
+#     bl_icon = 'PLUS'
+
+#     def redraw3DViewport(self, context):
+#         Draw.refreshViewport(self.enabled)
+
+#     enabled = bpy.props.BoolProperty(name="Enabled",
+#                                      default=False,
+#                                      update=redraw3DViewport)
+
+#     def draw_buttons(self, context, layout):
+#         layout.prop(self, "enabled", text="Show SDF")
+
+#     # def update(self):
+#     #     if self.inputs[0].links:
+#     #         Draw.refreshViewport(False)
+#     #         Draw.refreshViewport(True)
+
+#     def init(self, context):
+#         self.inputs.new('NodeSocketFloat', "Distance")
+#         self.inputs[0].hide_value = True
+
+#     def free(self):
+#         Draw.refreshViewport(False)
 
 
 class CustomNodeCategory(nodeitems_utils.NodeCategory):
@@ -374,6 +475,8 @@ node_categories = [
                        "Operations",
                        items=[
                            nodeitems_utils.NodeItem("Bool", label="Bool"),
+                           nodeitems_utils.NodeItem("SmoothBool",
+                                                    label="Smooth Bool")
                        ]),
     CustomNodeCategory("OUTPUT_NODES",
                        "Output",
@@ -403,48 +506,7 @@ node_categories = [
 
 classes = (CustomNodeSocket, CustomNodeTree, CustomSimpleInputNode,
            SdfNodeSocketFloat, SdfNodeSocketVectorTranslation, SphereSDFNode,
-           BoxSDFNode, BoolNode, ViewerNode)
-
-
-def gen_update_view(area, space_data):
-    def update_view(scene):
-        if area:
-            print('bpy.context.area')
-            if area.ui_type == 'CustomNodeTree':
-                if hasattr(space_data, 'edit_tree'):
-                    print(space_data.edit_tree.name)
-                    for node in space_data.edit_tree.nodes:
-                        if node.bl_idname == 'Viewer':
-                            print('has Viewer')
-                            if node.enabled:
-                                Draw.refreshViewport(False)
-                                Draw.refreshViewport(True)
-                            else:
-                                Draw.refreshViewport(False)
-
-    return update_view
-
-
-#  def update_view(scene):
-#         if bpy.context.area:
-#             print('bpy.context.area')
-#             if bpy.context.area.ui_type == 'CustomNodeTree':
-#                 if hasattr(bpy.context.space_data, 'edit_tree'):
-#                     print(bpy.context.space_data.edit_tree.name)
-#                     for node in bpy.context.space_data.edit_tree.nodes:
-#                         if node.bl_idname == 'Viewer':
-#                             print('has Viewer')
-#                             if node.enabled:
-#                                 Draw.refreshViewport(False)
-#                                 Draw.refreshViewport(True)
-#                             else:
-#                                 Draw.refreshViewport(False)
-
-
-def load_handler(scene):
-    bpy.app.handlers.depsgraph_update_post.append(
-        gen_update_view(bpy.context.area, bpy.context.space_data))
-    print(bpy.context.area, bpy.context.space_data)
+           BoxSDFNode, BoolNode, SmoothBoolNode, ViewerNode)
 
 
 # for loading we define the registering of all defined classes

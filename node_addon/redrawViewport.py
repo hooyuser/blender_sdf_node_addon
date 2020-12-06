@@ -5,7 +5,6 @@ from gpu_extras.batch import batch_for_shader
 import math
 import mathutils
 import inspect
-from .addonStatus import Status
 
 
 class NodeList(object):
@@ -304,12 +303,10 @@ class Draw(object):
                 cls.tag_redraw_all_3dviews()
 
     @classmethod
-    def every_second(cls):
-        if Status.active_nodetree():
-            v = bpy.data.node_groups[Status.active_nodetree()].nodes.get(
-                "Viewer")
-            if v:
-                if v.enabled:
-                    Draw.refreshViewport(False)
-                    Draw.refreshViewport(True)
-            return 0.1
+    def update_callback(cls):
+        for node in bpy.context.space_data.edit_tree.nodes:
+            if node.bl_idname == 'Viewer':
+                print('has Viewer')
+                if node.enabled:
+                    cls.refreshViewport(False)
+                    cls.refreshViewport(True)
