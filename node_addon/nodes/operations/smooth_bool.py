@@ -8,12 +8,12 @@ class SmoothBoolNode(bpy.types.Node, CustomNode):
 
     bl_idname = 'SmoothBool'
     bl_label = 'Smooth Bool'
-    bl_icon = 'PLUS'
+    bl_icon = 'MOD_BOOLEAN'
 
     operationItems = [
         ("S_UNION", "Smooth Union", "Smooth Union", "", 0),
         ("S_INTERSECT", "Smooth Intersect", "Smooth Intersect", "", 1),
-        ("S_UBTRACT", "Smooth Subtract", "Smooth Subtract", "", 2)
+        ("S_SUBTRACT", "Smooth Subtract", "Smooth Subtract", "", 2)
     ]
 
     operationLabels = {
@@ -47,7 +47,7 @@ class SmoothBoolNode(bpy.types.Node, CustomNode):
         self.inputs.new('NodeSocketFloat', "Distance 2")
         self.inputs[2].hide_value = True
 
-        self.outputs.new('SdfNodeSocketFloat', "Distance")
+        self.outputs.new('NodeSocketFloat', "Distance")
 
     def gen_glsl(self):
         k = self.inputs[0].default_value

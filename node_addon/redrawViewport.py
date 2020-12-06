@@ -5,6 +5,7 @@ from gpu_extras.batch import batch_for_shader
 import math
 import mathutils
 import inspect
+from bpy_extras import view3d_utils
 
 
 class NodeList(object):
@@ -22,23 +23,27 @@ class NodeList(object):
         for node in self.tree.nodes:
             node.index = -1
         self.followLinks(node_in)
-        self.glsl_text += '''
-            return d_{};'''.format(len(self.node_list) - 1)
-        inspect.cleandoc(self.glsl_text)
+        if self.node_list:
+            self.glsl_text += '''
+                return d_{};'''.format(len(self.node_list) - 1)
+            inspect.cleandoc(self.glsl_text)
+        else:
+            self.glsl_text = 'return 2 * MAX_DIST'
 
     def followLinks(self, node_in):
 
         for n_inputs in node_in.inputs:
-            for node_links in n_inputs.links:
-                self.followLinks(node_links.from_node)
-                node_name = node_links.from_node.name
-                node = self.tree.nodes[node_name]
+            for node_link in n_inputs.links:
+                a = node_link.to_socket.bl_idname
+                if node_link.from_socket.bl_idname == a:
+                    node = node_link.from_node
+                    self.followLinks(node)
 
-                if node.index < 0:
-                    node.index = len(self.node_list)
-                    self.node_list.append(node)
-                    print(node.name, ':', node.index)
-                    self.glsl_text += node.gen_glsl()
+                    if node.index < 0:
+                        node.index = len(self.node_list)
+                        self.node_list.append(node)
+                        print(node.name, ':', node.index)
+                        self.glsl_text += node.gen_glsl()
 
 
 class Draw(object):
@@ -65,6 +70,7 @@ class Draw(object):
     uniform vec3 CamLoc;
     uniform vec3 LightLoc;
     uniform vec2 Size;
+    uniform bool IsPers;
 
     #define PI 3.1415926535
     #define EPSILON 0.001
@@ -153,12 +159,19 @@ class Draw(object):
 
     vec3 rayDirection(vec2 fragCoord)
     {
-        vec3 outer = vec3((2.0 * fragCoord.x / Size.x) - 1.0,
-                        (2.0 * fragCoord.y / Size.y) - 1.0,
-                        -0.5);
-        float w = dot(outer, PersInv[3].xyz) + PersInv[3][3];
-        return normalize((((vec4(outer, 1.0) * PersInv).xyz / w)
-            - vec3(ViewInv[0].w,ViewInv[1].w,ViewInv[2].w)));
+        if (IsPers)
+        {
+            vec3 outer = vec3((2.0 * fragCoord.x / Size.x) - 1.0,
+                            (2.0 * fragCoord.y / Size.y) - 1.0,
+                            -0.5);
+            float w = dot(outer, PersInv[3].xyz) + PersInv[3][3];
+            return normalize((((vec4(outer, 1.0) * PersInv).xyz / w)
+                - vec3(ViewInv[0][3],ViewInv[1][3],ViewInv[2][3])));
+        }
+        else
+        {
+            return - normalize(vec3(ViewInv[0][2],ViewInv[1][2],ViewInv[2][2]));
+        }
     }
 
 
@@ -206,9 +219,23 @@ class Draw(object):
                         cls.config["inv_pers_matrix"] = inv_pers.transposed()
                         inv_view = region3d.view_matrix.inverted()
                         cls.config["inv_view_matrix"] = inv_view.transposed()
-                        cls.config["cam"] = inv_view.translation
+                        cls.config["is_perspective"] = region3d.is_perspective
+                        if cls.config["is_perspective"]:
+                            cls.config["cam"] = inv_view.translation
+                        else:
+                            cls.config[
+                                "cam"] = view3d_utils.region_2d_to_origin_3d(
+                                    region,
+                                    region3d,
+                                    [region.width / 2, region.height / 2],
+                                    clamp=10.0)
+
                         cls.config["light"] = mathutils.Vector(
                             cls.rot(cls.config["cam"], 30, -30))
+
+                        # print(cls.config["is_perspective"], cls.config["cam"])
+
+                        # print((-inv_view.col[2].xyz).normalized())
 
     vertices = ((0, 0), (600, 0), (0, 600), (600, 600))
 
@@ -233,6 +260,7 @@ class Draw(object):
         cls.shader.uniform_float("Size", (width, height))
         cls.shader.uniform_float("CamLoc", cls.config["cam"])
         cls.shader.uniform_float("LightLoc", cls.config["light"])
+        cls.shader.uniform_bool("IsPers", (cls.config["is_perspective"], ))
         vertices = ((0, 0), (width, 0), (0, height), (width, height))
         batch = batch_for_shader(cls.shader,
                                  'TRIS', {"pos": vertices},
@@ -244,7 +272,7 @@ class Draw(object):
     @classmethod
     def gen_draw_handler(cls):
 
-        print('GLSL:\n')
+        # print('GLSL:\n')
         # nodetree = bpy.data.node_groups[
         # "NodeTree"]   bpy.data.node_groups["NodeTree"].nodes.active   update_tag  interface_update
         # no = nodetree.nodes[
@@ -279,6 +307,7 @@ class Draw(object):
             shader.uniform_float("Size", (width, height))
             shader.uniform_float("CamLoc", cls.config["cam"])
             shader.uniform_float("LightLoc", cls.config["light"])
+            shader.uniform_bool("IsPers", (cls.config["is_perspective"], ))
             vertices = ((0, 0), (width, 0), (0, height), (width, height))
             batch = batch_for_shader(shader,
                                      'TRIS', {"pos": vertices},
@@ -306,7 +335,7 @@ class Draw(object):
     def update_callback(cls):
         for node in bpy.context.space_data.edit_tree.nodes:
             if node.bl_idname == 'Viewer':
-                print('has Viewer')
+                # print('has Viewer')
                 if node.enabled:
                     cls.refreshViewport(False)
                     cls.refreshViewport(True)

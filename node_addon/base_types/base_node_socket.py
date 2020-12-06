@@ -56,6 +56,7 @@ class SdfNodeSocketFloat(bpy.types.NodeSocket):
 
 
 class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket):
+
     bl_idname = "SdfNodeSocketVectorTranslation"
     bl_label = "SDF Node Socket Vector Translation"
 
@@ -75,3 +76,20 @@ class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket):
 
     def draw_color(self, context, node):
         return (0.2, 0.2, 0.8, 1)
+
+
+class SdfNodeSocketOperation(bpy.types.NodeSocket):
+    bl_idname = "SdfNodeSocketOperation"
+    bl_label = "SDF Node Socket Operation"
+
+    def default_value_callback(self, context):
+        Draw.update_callback()
+
+    default_value = bpy.props.FloatVectorProperty(
+        update=default_value_callback)
+
+    def draw(self, context, layout, node, text):
+        layout.label(text='Operation')
+
+    def draw_color(self, context, node):
+        return (0.8, 0.3, 0.023, 1)

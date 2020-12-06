@@ -8,7 +8,7 @@ class ViewerNode(bpy.types.Node, CustomNode):
 
     bl_idname = 'Viewer'
     bl_label = 'Viewer'
-    bl_icon = 'PLUS'
+    bl_icon = 'RESTRICT_RENDER_OFF'
 
     def redraw3DViewport(self, context):
         Draw.refreshViewport(self.enabled)

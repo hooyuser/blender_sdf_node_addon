@@ -61,13 +61,19 @@ node_categories = [
             #   NOTE: use 'repr()' to convert the value to string IMPORTANT
             nodeitems_utils.NodeItem("SphereSDF", label="Sphere"),
             nodeitems_utils.NodeItem("BoxSDF", label="Box"),
+            nodeitems_utils.NodeItem("TorusSDF", label="Torus"),
+            nodeitems_utils.NodeItem("ConeSDF", label="Cone")
         ]),
     CustomNodeCategory("OPERATIONS_NODES",
                        "Operations",
                        items=[
                            nodeitems_utils.NodeItem("Bool", label="Bool"),
                            nodeitems_utils.NodeItem("SmoothBool",
-                                                    label="Smooth Bool")
+                                                    label="Smooth Bool"),
+                           nodeitems_utils.NodeItem("Round", label="Round"),
+                           nodeitems_utils.NodeItem("Onion", label="Onion"),
+                           nodeitems_utils.NodeItem("Operate", label="Operate"),
+                           nodeitems_utils.NodeItem("Mirror", label="Mirror"),
                        ]),
     CustomNodeCategory("OUTPUT_NODES",
                        "Output",

@@ -7,7 +7,7 @@ class SphereSDFNode(bpy.types.Node, CustomNode):
 
     bl_idname = 'SphereSDF'
     bl_label = 'Sphere SDF'
-    bl_icon = 'PLUS'
+    bl_icon = 'SPHERE'
 
     def init(self, context):
         self.index = -1

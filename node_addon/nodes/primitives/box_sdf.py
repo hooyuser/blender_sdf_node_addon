@@ -7,7 +7,7 @@ class BoxSDFNode(bpy.types.Node, CustomNode):
 
     bl_idname = 'BoxSDF'
     bl_label = 'Box SDF'
-    bl_icon = 'PLUS'
+    bl_icon = 'CUBE'
 
     def init(self, context):
 
