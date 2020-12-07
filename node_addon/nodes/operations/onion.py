@@ -19,15 +19,18 @@ class OnionNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self, node_info):
-        last = self.inputs[1].links[0].from_node.index
-        me = self.index
-        r = self.inputs[0].default_value
+    def gen_glsl(self):
+        if self.inputs[1].links:
+            last = self.inputs[1].links[0].from_node.index
+            me = self.index
+            r = self.inputs[0].default_value
 
-        node_info.glsl_p_list.append(f'''
-            vec3 p_{last} = p_{me};
-        ''')
-
-        node_info.glsl_d_list.append(f'''
-            float d_{me} = abs(d_{last}) - {r};
-        ''')
+            return f'''
+                vec3 p_{last} = p_{me};
+            ''', f'''
+                float d_{me} = abs(d_{last}) - {r};
+            '''
+        else:
+            return '', f'''
+                float d_{me} = 2 * MAX_DIST;
+            '''

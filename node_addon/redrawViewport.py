@@ -39,11 +39,19 @@ class NodeList(object):
         else:
             self.glsl_text = 'return 2 * MAX_DIST;'
 
-
     def update_glsl_text(self, node):
-        self.tree = bpy.context.space_data.edit_tree
-
-
+        if self.node_list:
+            num = len(self.node_list) - 1
+            i = node.index
+            glsl = node.gen_glsl()
+            self.glsl_p_list[len(self.node_list) - 1 - i] = glsl[0]
+            self.glsl_d_list[i] = glsl[1]
+            self.glsl_text = f'''
+            vec3 p_{num} = p;
+            ''' + ''.join(self.glsl_p_list) + ''.join(self.glsl_d_list) + f'''
+            return d_{num};
+            '''
+            inspect.cleandoc(self.glsl_text)
 
     def followLinks(self, node_in):
 
@@ -57,8 +65,10 @@ class NodeList(object):
                     if node.index < 0:
                         node.index = len(self.node_list)
                         self.node_list.append(node)
-                        print(node.name, ':', node.index)
-                        node.gen_glsl(self)
+                        # print(node.name, ':', node.index)
+                        glsl = node.gen_glsl()
+                        self.glsl_p_list.append(glsl[0])
+                        self.glsl_d_list.append(glsl[1])
 
 
 class Draw(object):
@@ -285,7 +295,7 @@ class Draw(object):
     glsl_nodes = NodeList()
 
     @classmethod
-    def gen_draw_handler(cls):
+    def gen_draw_handler(cls, update_node=False):
 
         # print('GLSL:\n')
         # nodetree = bpy.data.node_groups[
@@ -305,9 +315,13 @@ class Draw(object):
         #     print(selection)
         # return {'FINISHED'}
 
-        cls.glsl_nodes.gen_node_list(
-            bpy.context.space_data.edit_tree.nodes["Viewer"])
-        print(cls.glsl_nodes.glsl_text)
+        if update_node:
+            cls.glsl_nodes.update_glsl_text(update_node)
+        else:
+            cls.glsl_nodes.gen_node_list(
+                bpy.context.space_data.edit_tree.nodes["Viewer"])
+
+        # print(cls.glsl_nodes.glsl_text)
 
         shader = gpu.types.GPUShader(
             cls.v_, cls.f_1 + cls.glsl_nodes.glsl_text + cls.f_2)
@@ -332,12 +346,13 @@ class Draw(object):
         return draw
 
     @classmethod
-    def refreshViewport(cls, enabled):
+    def refreshViewport(cls, enabled, update_node=False):
         if enabled:
             if len(cls.handlers) == 0:
                 cls.handlers.append(
                     bpy.types.SpaceView3D.draw_handler_add(
-                        cls.gen_draw_handler(), (), 'WINDOW', 'POST_PIXEL'))
+                        cls.gen_draw_handler(update_node), (), 'WINDOW',
+                        'POST_PIXEL'))
                 cls.tag_redraw_all_3dviews()
         else:
             if cls.handlers:
@@ -347,10 +362,10 @@ class Draw(object):
                 cls.tag_redraw_all_3dviews()
 
     @classmethod
-    def update_callback(cls):
+    def update_callback(cls, update_node=False):
         for node in bpy.context.space_data.edit_tree.nodes:
             if node.bl_idname == 'Viewer':
                 # print('has Viewer')
                 if node.enabled and node.inputs[0].links:
-                    cls.refreshViewport(False)
-                    cls.refreshViewport(True)
+                    cls.refreshViewport(False, update_node)
+                    cls.refreshViewport(True, update_node)

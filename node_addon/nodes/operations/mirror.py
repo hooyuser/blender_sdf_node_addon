@@ -30,21 +30,19 @@ class MirrorNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self, node_info):
+    def gen_glsl(self):
         if self.inputs[0].links:
             last = self.inputs[0].links[0].from_node.index
             me = self.index
             x = 'abs' if self.mirror_axis[0] else ''
             y = 'abs' if self.mirror_axis[1] else ''
             z = 'abs' if self.mirror_axis[2] else ''
-            node_info.glsl_p_list.append(f'''
+            return f'''
                 vec3 p_{last} = vec3({x}(p_{me}.x),{y}(p_{me}.y),{z}(p_{me}.z));
-            ''')
-            node_info.glsl_d_list.append(f'''
+            ''', f'''
                 float d_{me} = d_{last};
-            ''')
+            '''
         else:
-            node_info.glsl_p_list.append('')
-            node_info.glsl_d_list.append(f'''
+            return '', f'''
                 float d_{me} = 2 * MAX_DIST;
-            ''')
+            '''

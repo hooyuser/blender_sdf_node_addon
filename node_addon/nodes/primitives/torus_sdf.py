@@ -21,10 +21,9 @@ class TorusSDFNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self, node_info):
+    def gen_glsl(self):
         loc = self.inputs[2].default_value
-        node_info.glsl_p_list.append('')
-        node_info.glsl_d_list.append(f'''
+        return '', f'''
             float d_{self.index} = length(vec2(length(p.xz-vec2({loc[0]},{loc[2]}))-
                 {self.inputs[0].default_value},p.y-({loc[1]})))-{self.inputs[1].default_value};
-        ''')
+        '''

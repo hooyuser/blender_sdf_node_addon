@@ -22,7 +22,7 @@ class TransformNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self, node_info):
+    def gen_glsl(self):
         me = self.index
         if self.inputs[3].links:
             last = self.inputs[3].links[0].from_node.index
@@ -34,16 +34,17 @@ class TransformNode(bpy.types.Node, CustomNode):
             mat = mat_loc @ mat_rot.to_4x4()
             mathutils.Matrix.invert(mat)
 
-            node_info.glsl_p_list.append(f'''
+            glsl_p = f'''
                 vec3 p_{last} = vec3(p_{me}.x*{mat[0][0]}+p_{me}.y*{mat[0][1]}+p_{me}.z*{mat[0][2]}+({mat[0][3]}),
                     p_{me}.x*{mat[1][0]}+p_{me}.y*{mat[1][1]}+p_{me}.z*{mat[1][2]}+({mat[1][3]}),
                     p_{me}.x*{mat[2][0]}+p_{me}.y*{mat[2][1]}+p_{me}.z*{mat[2][2]}+({mat[2][3]}))/({sca});
-            ''')
-            node_info.glsl_d_list.append(f'''
+            '''
+            glsl_d = f'''
                 float d_{me} = d_{last} * abs({sca});
-            ''')
+            '''
         else:
-            node_info.glsl_p_list.append('')
-            node_info.glsl_d_list.append(f'''
+            glsl_p = ''
+            glsl_d = f'''
                 float d_{me} = 2 * MAX_DIST;
-            ''')
+            '''
+        return glsl_p, glsl_d

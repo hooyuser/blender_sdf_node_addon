@@ -38,7 +38,7 @@ class SdfNodeSocketPositiveFloat(bpy.types.NodeSocket):
     bl_label = "SDF Node Socket Positive Float"
 
     def default_value_callback(self, context):
-        Draw.update_callback()
+        Draw.update_callback(update_node=self.node)
 
     default_value = bpy.props.FloatProperty(subtype='UNSIGNED',
                                             min=0.0,
@@ -60,7 +60,7 @@ class SdfNodeSocketFloat(bpy.types.NodeSocket):
     bl_label = "SDF Node Socket Float"
 
     def default_value_callback(self, context):
-        Draw.update_callback()
+        Draw.update_callback(update_node=self.node)
 
     default_value = bpy.props.FloatProperty(update=default_value_callback)
 
@@ -81,7 +81,7 @@ class SdfNodeSocketFloatVector(bpy.types.NodeSocket):
     bl_label = "SDF Node Socket Float Vector"
 
     def default_value_callback(self, context):
-        Draw.update_callback()
+        Draw.update_callback(update_node=self.node)
 
     default_value = bpy.props.FloatVectorProperty(
         update=default_value_callback)
@@ -104,7 +104,7 @@ class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket):
     bl_label = "SDF Node Socket Vector Translation"
 
     def default_value_callback(self, context):
-        Draw.update_callback()
+        Draw.update_callback(update_node=self.node)
 
     default_value = bpy.props.FloatVectorProperty(
         subtype='TRANSLATION', update=default_value_callback)
@@ -127,8 +127,7 @@ class SdfNodeSocketEuler(bpy.types.NodeSocket):
     bl_label = "SDF Node Socket Euler"
 
     def default_value_callback(self, context):
-        print(self)
-        Draw.update_callback()
+        Draw.update_callback(update_node=self.node)
 
     default_value = bpy.props.FloatVectorProperty(
         default=[0, 0, 0], update=default_value_callback, subtype="EULER")
@@ -150,7 +149,7 @@ class SdfNodeSocketOperation(bpy.types.NodeSocket):
     bl_label = "SDF Node Socket Operation"
 
     def default_value_callback(self, context):
-        Draw.update_callback()
+        Draw.update_callback(update_node=self.node)
 
     default_value = bpy.props.FloatVectorProperty(
         update=default_value_callback)

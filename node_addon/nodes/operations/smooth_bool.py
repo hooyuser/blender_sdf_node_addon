@@ -49,45 +49,43 @@ class SmoothBoolNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self, node_info):
+    def gen_glsl(self):
         k = self.inputs[0].default_value
         me = self.index
 
         if self.inputs[1].links:
             input_1_p = self.inputs[1].links[0].from_node.index
             input_1_d = 'd_' + str(input_1_p)
-            glsl_p_code = f'''
+            glsl_p = f'''
             vec3 p_{input_1_p}=p_{me};
             '''
         else:
             input_1_d = '2.0 * MAX_DIST'
-            glsl_p_code = ''
+            glsl_p = ''
 
         if self.inputs[2].links:
             input_2_p = self.inputs[2].links[0].from_node.index
             input_2_d = 'd_' + str(input_2_p)
-            glsl_p_code += f'''
+            glsl_p += f'''
             vec3 p_{input_2_p}=p_{me};
             '''
         else:
             input_2_d = '2.0 * MAX_DIST'
 
-        node_info.glsl_p_list.append(glsl_p_code)
-
         if self.operation == "S_UNION":
-            glsl_d_code = f'''
+            glsl_d = f'''
             float h_{me} = max({k}-abs({input_1_d}-{input_2_d}),0.0);
             float d_{me} = min({input_1_d},{input_2_d}) - h_{me}*h_{me}*0.25/{k};
             '''
         elif self.operation == "S_INTERSECT":
-            glsl_d_code = f'''
+            glsl_d = f'''
             float h_{me} = max({k}-abs({input_1_d}-{input_2_d}),0.0);
             float d_{me} = max({input_1_d},{input_2_d}) + h_{me}*h_{me}*0.25/{k};
             '''
         else:
-            glsl_d_code = f'''
+            glsl_d = f'''
             float h_{me} = max({k}-abs(-{input_1_d}-{input_2_d}),0.0);
             float d_{me} = max({input_1_d},-{input_2_d}) + h_{me}*h_{me}*0.25/{k};
             '''
 
-        node_info.glsl_d_list.append(glsl_d_code)
+        return glsl_p, glsl_d

@@ -24,13 +24,12 @@ class BoxSDFNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self, node_info):
+    def gen_glsl(self):
         loc = self.inputs[3].default_value
         me = self.index
-        node_info.glsl_p_list.append('')
-        node_info.glsl_d_list.append(f'''
+        return '', f'''
             vec3 q_{me} = abs(p_{me} - vec3({loc[0]},{loc[1]},{loc[2]})) -
                 vec3({self.inputs[0].default_value},{self.inputs[1].default_value},{self.inputs[2].default_value});
             float d_{me} = length(max(q_{me},0.0)) +
                 min(max(q_{me}.x,max(q_{me}.y,q_{me}.z)),0.0);
-        ''')
+        '''
