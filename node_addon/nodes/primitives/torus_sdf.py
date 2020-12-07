@@ -11,21 +11,20 @@ class TorusSDFNode(bpy.types.Node, CustomNode):
 
     def init(self, context):
 
-        self.inputs.new('SdfNodeSocketFloat', "Major Radius")
+        self.inputs.new('SdfNodeSocketPositiveFloat', "Major Radius")
         self.inputs[0].default_value = 2
 
-        self.inputs.new('SdfNodeSocketFloat', "Minor Radius")
+        self.inputs.new('SdfNodeSocketPositiveFloat', "Minor Radius")
         self.inputs[1].default_value = 1
 
         self.inputs.new('SdfNodeSocketVectorTranslation', "Location")
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self):
+    def gen_glsl(self, node_info):
         loc = self.inputs[2].default_value
-        glsl_code = '''
-            float d_{} = length(vec2(length(p.xz-vec2({},{}))-{},p.y-({})))-{};
-        '''.format(self.index, loc[0], loc[2], self.inputs[0].default_value,
-                   loc[1], self.inputs[1].default_value)
-
-        return glsl_code
+        node_info.glsl_p_list.append('')
+        node_info.glsl_d_list.append(f'''
+            float d_{self.index} = length(vec2(length(p.xz-vec2({loc[0]},{loc[2]}))-
+                {self.inputs[0].default_value},p.y-({loc[1]})))-{self.inputs[1].default_value};
+        ''')

@@ -1,19 +1,16 @@
 import bpy
-
 from ...base_types.base_node import CustomNode
 
 
-class RoundNode(bpy.types.Node, CustomNode):
-    '''Round node'''
+class ElongateNode(bpy.types.Node, CustomNode):
+    '''Elongate node'''
 
-    bl_idname = 'Round'
-    bl_label = 'Round'
-    bl_icon = 'MOD_CAST'
+    bl_idname = 'Elongate'
+    bl_label = 'Elongate'
+    bl_icon = 'MOD_MIRROR'
 
     def init(self, context):
-
-        self.inputs.new('SdfNodeSocketPositiveFloat', "Radius")
-        self.inputs[0].default_value = 0.1
+        self.inputs.new('SdfNodeSocketVectorTranslation', "Shift")
 
         self.inputs.new('NodeSocketFloat', "Distance")
         self.inputs[1].hide_value = True
@@ -21,17 +18,15 @@ class RoundNode(bpy.types.Node, CustomNode):
         self.outputs.new('NodeSocketFloat', "Distance")
 
     def gen_glsl(self, node_info):
-        me = self.index
         if self.inputs[1].links:
             last = self.inputs[1].links[0].from_node.index
-            r = self.inputs[0].default_value
-
+            me = self.index
+            h = self.inputs[0].default_value
             node_info.glsl_p_list.append(f'''
-                vec3 p_{last} = p_{me};
+                vec3 p_{last} = p_{me} - clamp( p_{me}, -vec3({h[0]},{h[1]},{h[2]}), vec3({h[0]},{h[1]},{h[2]}));
             ''')
-
             node_info.glsl_d_list.append(f'''
-                float d_{me} = d_{last} - {r};
+                float d_{me} = d_{last};
             ''')
         else:
             node_info.glsl_p_list.append('')

@@ -11,7 +11,7 @@ class OnionNode(bpy.types.Node, CustomNode):
 
     def init(self, context):
 
-        self.inputs.new('SdfNodeSocketFloat', "Thickness")
+        self.inputs.new('SdfNodeSocketPositiveFloat', "Thickness")
         self.inputs[0].default_value = 0.1
 
         self.inputs.new('NodeSocketFloat', "Distance")
@@ -19,11 +19,15 @@ class OnionNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self):
-        glsl_code = '''
-        float d_%d = abs(d_%d) - %f;
-        ''' % (self.index, bpy.data.node_groups["NodeTree"].nodes[
-            self.inputs[1].links[0].from_node.name].index,
-               self.inputs[0].default_value)
+    def gen_glsl(self, node_info):
+        last = self.inputs[1].links[0].from_node.index
+        me = self.index
+        r = self.inputs[0].default_value
 
-        return glsl_code
+        node_info.glsl_p_list.append(f'''
+            vec3 p_{last} = p_{me};
+        ''')
+
+        node_info.glsl_d_list.append(f'''
+            float d_{me} = abs(d_{last}) - {r};
+        ''')

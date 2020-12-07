@@ -11,19 +11,21 @@ class ConeSDFNode(bpy.types.Node, CustomNode):
 
     def init(self, context):
 
-        self.inputs.new('SdfNodeSocketFloat', "Height")
+        self.inputs.new('SdfNodeSocketPositiveFloat', "Height")
         self.inputs[0].default_value = 2
 
-        self.inputs.new('SdfNodeSocketFloat', "Angle")
+        self.inputs.new('SdfNodeSocketPositiveFloat', "Angle")
         self.inputs[1].default_value = 30
 
         self.inputs.new('SdfNodeSocketVectorTranslation', "Location")
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self):
+    def gen_glsl(self, node_info):
         loc = self.inputs[2].default_value
-        glsl_code = '''
+        node_info.glsl_p_list.append('')
+        node_info.glsl_d_list.append(
+            '''
             vec2 q_%(i)d = %(h)f * vec2(tan(radians(%(angle)f)),-1.0);
             vec2 w_%(i)d = vec2( length(p.xz-vec2(%(x)f,%(z)f)), p.y-(%(y)f));
             vec2 a_%(i)d = w_%(i)d - q_%(i)d*clamp(dot(w_%(i)d,q_%(i)d)/dot(q_%(i)d,q_%(i)d), 0.0, 1.0);
@@ -33,12 +35,10 @@ class ConeSDFNode(bpy.types.Node, CustomNode):
             float s_%(i)d = max( k_%(i)d*(w_%(i)d.x*q_%(i)d.y-w_%(i)d.y*q_%(i)d.x),k_%(i)d*(w_%(i)d.y-q_%(i)d.y));
             float d_%(i)d = sqrt(t_%(i)d)*sign(s_%(i)d);
         ''' % {
-            'i': self.index,
-            'h': self.inputs[0].default_value,
-            'angle': self.inputs[1].default_value,
-            'x': loc[0],
-            'y': loc[1],
-            'z': loc[2]
-        }
-
-        return glsl_code
+                'i': self.index,
+                'h': self.inputs[0].default_value,
+                'angle': self.inputs[1].default_value,
+                'x': loc[0],
+                'y': loc[1],
+                'z': loc[2]
+            })

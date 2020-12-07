@@ -13,29 +13,44 @@ class NodeList(object):
     tree = None
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.node_list = []
+        self.glsl_p_list = []
+        self.glsl_d_list = []
         self.glsl_text = ''
 
     def gen_node_list(self, node_in):
-        self.node_list = []
-        self.glsl_text = ''
+        self.reset()
         self.tree = bpy.context.space_data.edit_tree
         for node in self.tree.nodes:
             node.index = -1
         self.followLinks(node_in)
         if self.node_list:
-            self.glsl_text += '''
-                return d_{};'''.format(len(self.node_list) - 1)
+            num = len(self.node_list) - 1
+            self.glsl_p_list.reverse()
+            self.glsl_text = f'''
+            vec3 p_{num} = p;
+            ''' + ''.join(self.glsl_p_list) + ''.join(self.glsl_d_list) + f'''
+            return d_{num};
+            '''
             inspect.cleandoc(self.glsl_text)
         else:
-            self.glsl_text = 'return 2 * MAX_DIST'
+            self.glsl_text = 'return 2 * MAX_DIST;'
+
+
+    def update_glsl_text(self, node):
+        self.tree = bpy.context.space_data.edit_tree
+
+
 
     def followLinks(self, node_in):
 
         for n_inputs in node_in.inputs:
             for node_link in n_inputs.links:
-                a = node_link.to_socket.bl_idname
-                if node_link.from_socket.bl_idname == a:
+                to_name = node_link.to_socket.bl_idname
+                if node_link.from_socket.bl_idname == to_name:
                     node = node_link.from_node
                     self.followLinks(node)
 
@@ -43,7 +58,7 @@ class NodeList(object):
                         node.index = len(self.node_list)
                         self.node_list.append(node)
                         print(node.name, ':', node.index)
-                        self.glsl_text += node.gen_glsl()
+                        node.gen_glsl(self)
 
 
 class Draw(object):
@@ -336,6 +351,6 @@ class Draw(object):
         for node in bpy.context.space_data.edit_tree.nodes:
             if node.bl_idname == 'Viewer':
                 # print('has Viewer')
-                if node.enabled:
+                if node.enabled and node.inputs[0].links:
                     cls.refreshViewport(False)
                     cls.refreshViewport(True)

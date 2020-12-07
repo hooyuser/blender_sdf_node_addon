@@ -12,18 +12,17 @@ class SphereSDFNode(bpy.types.Node, CustomNode):
     def init(self, context):
         self.index = -1
 
-        self.inputs.new('SdfNodeSocketFloat', "Radius")
+        self.inputs.new('SdfNodeSocketPositiveFloat', "Radius")
         self.inputs[0].default_value = 1
 
         self.inputs.new('SdfNodeSocketVectorTranslation', "Location")
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self):
+    def gen_glsl(self, node_info):
         loc = self.inputs[1].default_value
-        glsl_code = '''
-            float d_{}=length(p-vec3({},{},{}))-{};
-        '''.format(self.index, loc[0], loc[1], loc[2],
-                   self.inputs[0].default_value)
-
-        return glsl_code
+        node_info.glsl_p_list.append('')
+        node_info.glsl_d_list.append('''
+            float d_{}=length(p_{}-vec3({},{},{}))-{};
+        '''.format(self.index, self.index, loc[0], loc[1], loc[2],
+                   self.inputs[0].default_value))

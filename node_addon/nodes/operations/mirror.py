@@ -25,15 +25,26 @@ class MirrorNode(bpy.types.Node, CustomNode):
         subrow.prop(self, "mirror_axis", index=2, text="Z", toggle=True)
 
     def init(self, context):
-        self.inputs.new('SdfNodeSocketOperation', "Distance")
+        self.inputs.new('NodeSocketFloat', "Distance")
+        self.inputs[0].hide_value = True
 
-        self.outputs.new('SdfNodeSocketOperation', "Operation")
+        self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self):
-
-        if self.mirror_axis[0]:
-            glsl_code = '''
-            float d;
-            '''
-
-        return glsl_code
+    def gen_glsl(self, node_info):
+        if self.inputs[0].links:
+            last = self.inputs[0].links[0].from_node.index
+            me = self.index
+            x = 'abs' if self.mirror_axis[0] else ''
+            y = 'abs' if self.mirror_axis[1] else ''
+            z = 'abs' if self.mirror_axis[2] else ''
+            node_info.glsl_p_list.append(f'''
+                vec3 p_{last} = vec3({x}(p_{me}.x),{y}(p_{me}.y),{z}(p_{me}.z));
+            ''')
+            node_info.glsl_d_list.append(f'''
+                float d_{me} = d_{last};
+            ''')
+        else:
+            node_info.glsl_p_list.append('')
+            node_info.glsl_d_list.append(f'''
+                float d_{me} = 2 * MAX_DIST;
+            ''')

@@ -17,6 +17,10 @@ class ViewerNode(bpy.types.Node, CustomNode):
                                      default=False,
                                      update=redraw3DViewport)
 
+    def update(self):
+        if not self.inputs[0].links:
+            Draw.refreshViewport(False)
+
     def draw_buttons(self, context, layout):
         layout.prop(self, "enabled", text="Show SDF")
 

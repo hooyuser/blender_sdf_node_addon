@@ -38,7 +38,7 @@ class SmoothBoolNode(bpy.types.Node, CustomNode):
 
     def init(self, context):
 
-        self.inputs.new('SdfNodeSocketFloat', "Smoothness")
+        self.inputs.new('SdfNodeSocketPositiveFloat', "Smoothness")
         self.inputs[0].default_value = 0.25
 
         self.inputs.new('NodeSocketFloat', "Distance 1")
@@ -49,32 +49,45 @@ class SmoothBoolNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self):
+    def gen_glsl(self, node_info):
         k = self.inputs[0].default_value
-        input_1 = 'd_' + str(bpy.data.node_groups["NodeTree"].nodes[
-            self.inputs[1].links[0].from_node.name].index
-                             ) if self.inputs[1].links else '2.0 * MAX_DIST'
-        input_2 = 'd_' + str(bpy.data.node_groups["NodeTree"].nodes[
-            self.inputs[2].links[0].from_node.name].index
-                             ) if self.inputs[2].links else '2.0 * MAX_DIST'
+        me = self.index
+
+        if self.inputs[1].links:
+            input_1_p = self.inputs[1].links[0].from_node.index
+            input_1_d = 'd_' + str(input_1_p)
+            glsl_p_code = f'''
+            vec3 p_{input_1_p}=p_{me};
+            '''
+        else:
+            input_1_d = '2.0 * MAX_DIST'
+            glsl_p_code = ''
+
+        if self.inputs[2].links:
+            input_2_p = self.inputs[2].links[0].from_node.index
+            input_2_d = 'd_' + str(input_2_p)
+            glsl_p_code += f'''
+            vec3 p_{input_2_p}=p_{me};
+            '''
+        else:
+            input_2_d = '2.0 * MAX_DIST'
+
+        node_info.glsl_p_list.append(glsl_p_code)
 
         if self.operation == "S_UNION":
-            glsl_code = '''
-            float h_{} = max({}-abs({}-{}),0.0);
-            float d_{} = min({},{}) - h_{}*h_{}*0.25/{};
-            '''.format(self.index, k, input_1, input_2, self.index, input_1,
-                       input_2, self.index, self.index, k)
+            glsl_d_code = f'''
+            float h_{me} = max({k}-abs({input_1_d}-{input_2_d}),0.0);
+            float d_{me} = min({input_1_d},{input_2_d}) - h_{me}*h_{me}*0.25/{k};
+            '''
         elif self.operation == "S_INTERSECT":
-            glsl_code = '''
-            float h_{} = max({}-abs({}-{}),0.0);
-            float d_{} = max({},{}) + h_{}*h_{}*0.25/{};
-            '''.format(self.index, k, input_1, input_2, self.index, input_1,
-                       input_2, self.index, self.index, k)
+            glsl_d_code = f'''
+            float h_{me} = max({k}-abs({input_1_d}-{input_2_d}),0.0);
+            float d_{me} = max({input_1_d},{input_2_d}) + h_{me}*h_{me}*0.25/{k};
+            '''
         else:
-            glsl_code = '''
-            float h_{} = max({}-abs(-{}-{}),0.0);
-            float d_{} = max(-{},{}) + h_{}*h_{}*0.25/{};
-            '''.format(self.index, k, input_1, input_2, self.index, input_1,
-                       input_2, self.index, self.index, k)
+            glsl_d_code = f'''
+            float h_{me} = max({k}-abs(-{input_1_d}-{input_2_d}),0.0);
+            float d_{me} = max({input_1_d},-{input_2_d}) + h_{me}*h_{me}*0.25/{k};
+            '''
 
-        return glsl_code
+        node_info.glsl_d_list.append(glsl_d_code)

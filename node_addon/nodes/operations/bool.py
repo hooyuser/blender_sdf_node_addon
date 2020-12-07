@@ -46,25 +46,39 @@ class BoolNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self):
-        input_0 = 'd_' + str(bpy.data.node_groups["NodeTree"].nodes[
-            self.inputs[0].links[0].from_node.name].index
-                             ) if self.inputs[0].links else '2.0 * MAX_DIST'
-        input_1 = 'd_' + str(bpy.data.node_groups["NodeTree"].nodes[
-            self.inputs[1].links[0].from_node.name].index
-                             ) if self.inputs[1].links else '2.0 * MAX_DIST'
+    def gen_glsl(self, node_info):
+        if self.inputs[0].links:
+            input_0_p = self.inputs[0].links[0].from_node.index
+            input_0_d = 'd_' + str(input_0_p)
+            glsl_p_code = '''
+            vec3 p_%d=p_%d;
+            ''' % (input_0_p, self.index)
+        else:
+            input_0_d = '2.0 * MAX_DIST'
+            glsl_p_code = ''
+
+        if self.inputs[1].links:
+            input_1_p = self.inputs[1].links[0].from_node.index
+            input_1_d = 'd_' + str(input_1_p)
+            glsl_p_code += '''
+            vec3 p_%d=p_%d;
+            ''' % (input_1_p, self.index)
+        else:
+            input_1_d = '2.0 * MAX_DIST'
+
+        node_info.glsl_p_list.append(glsl_p_code)
 
         if self.operation == "UNION":
-            glsl_code = '''
+            glsl_d_code = '''
             float d_{}=min({},{});
-            '''.format(self.index, input_0, input_1)
+            '''.format(self.index, input_0_d, input_1_d)
         elif self.operation == "INTERSECT":
-            glsl_code = '''
+            glsl_d_code = '''
             float d_{}=max({},{});
-            '''.format(self.index, input_0, input_1)
+            '''.format(self.index, input_0_d, input_1_d)
         else:
-            glsl_code = '''
-            float d_{}=max(-{},{});
-            '''.format(self.index, input_0, input_1)
+            glsl_d_code = '''
+            float d_{}=max({},-{});
+            '''.format(self.index, input_0_d, input_1_d)
 
-        return glsl_code
+        node_info.glsl_d_list.append(glsl_d_code)

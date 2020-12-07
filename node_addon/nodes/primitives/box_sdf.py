@@ -11,28 +11,26 @@ class BoxSDFNode(bpy.types.Node, CustomNode):
 
     def init(self, context):
 
-        self.inputs.new('SdfNodeSocketFloat', "Length")
+        self.inputs.new('SdfNodeSocketPositiveFloat', "Length")
         self.inputs[0].default_value = 1
 
-        self.inputs.new('SdfNodeSocketFloat', "Width")
+        self.inputs.new('SdfNodeSocketPositiveFloat', "Width")
         self.inputs[1].default_value = 1
 
-        self.inputs.new('SdfNodeSocketFloat', "Height")
+        self.inputs.new('SdfNodeSocketPositiveFloat', "Height")
         self.inputs[2].default_value = 1
 
         self.inputs.new('SdfNodeSocketVectorTranslation', "Location")
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self):
+    def gen_glsl(self, node_info):
         loc = self.inputs[3].default_value
-        glsl_code = '''
-            vec3 q_{} = abs(p - vec3({},{},{})) - vec3({},{},{});
-            float d_{} = length(max(q_{},0.0)) +
-                min(max(q_{}.x,max(q_{}.y,q_{}.z)),0.0);
-        '''.format(self.index, loc[0], loc[1], loc[2],
-                   self.inputs[0].default_value, self.inputs[1].default_value,
-                   self.inputs[2].default_value, self.index, self.index,
-                   self.index, self.index, self.index)
-
-        return glsl_code
+        me = self.index
+        node_info.glsl_p_list.append('')
+        node_info.glsl_d_list.append(f'''
+            vec3 q_{me} = abs(p_{me} - vec3({loc[0]},{loc[1]},{loc[2]})) -
+                vec3({self.inputs[0].default_value},{self.inputs[1].default_value},{self.inputs[2].default_value});
+            float d_{me} = length(max(q_{me},0.0)) +
+                min(max(q_{me}.x,max(q_{me}.y,q_{me}.z)),0.0);
+        ''')
