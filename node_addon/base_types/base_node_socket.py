@@ -168,7 +168,8 @@ class SdfNodeSocketInt(bpy.types.NodeSocket):
     def default_value_callback(self, context):
         Draw.update_callback(update_node=self.node)
 
-    default_value = bpy.props.IntProperty(update=default_value_callback)
+    default_value = bpy.props.IntProperty(soft_min=0,
+                                          update=default_value_callback)
 
     # Optional function for drawing the socket input value
     def draw(self, context, layout, node, text):

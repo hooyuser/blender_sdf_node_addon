@@ -2,15 +2,16 @@ import bpy
 from ...base_types.base_node import CustomNode
 
 
-class ElongateNode(bpy.types.Node, CustomNode):
-    '''Elongate node'''
+class TwistNode(bpy.types.Node, CustomNode):
+    '''Twist node'''
 
-    bl_idname = 'Elongate'
-    bl_label = 'Elongate'
-    bl_icon = 'SNAP_MIDPOINT'
+    bl_idname = 'Twist'
+    bl_label = 'Twist'
+    bl_icon = 'MOD_SCREW'
 
     def init(self, context):
-        self.inputs.new('SdfNodeSocketVectorTranslation', "Shift")
+        self.inputs.new('SdfNodeSocketFloat', "Intensity")
+        self.inputs[0].default_value = 0
 
         self.inputs.new('NodeSocketFloat', "Distance")
         self.inputs[1].hide_value = True
@@ -19,9 +20,12 @@ class ElongateNode(bpy.types.Node, CustomNode):
 
     def gen_glsl_func(self):
         if self.inputs[1].links:
-            h = self.inputs[0].default_value
+            k = self.inputs[0].default_value / 10
             return f'''vec3 g_{self.index}(vec3 p){{
-                    return p - clamp( p, -vec3({h[0]},{h[1]},{h[2]}), vec3({h[0]},{h[1]},{h[2]}));
+                    float c = cos({k}*p.z);
+                    float s = sin({k}*p.z);
+                    mat2 m = mat2(c,-s,s,c);
+                    return vec3(m*p.xy,p.z);
                 }}
                 '''
         else:

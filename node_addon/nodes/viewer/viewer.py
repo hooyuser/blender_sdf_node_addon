@@ -17,7 +17,7 @@ class ViewerNode(bpy.types.Node, CustomNode):
                                      default=False,
                                      update=redraw3DViewport)
 
-    def update(self):
+    def update(self):  # rewrite update function
         if not self.inputs[0].links:
             Draw.refreshViewport(False)
 

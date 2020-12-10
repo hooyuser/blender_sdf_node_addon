@@ -10,7 +10,7 @@ class ArrayNode(bpy.types.Node, CustomNode):
     bl_icon = 'MOD_ARRAY'
 
     def init(self, context):
-        self.inputs.new('SdfNodeSocketFloat', "Spacing")
+        self.inputs.new('SdfNodeSocketPositiveFloat', "Spacing")
         self.inputs[0].default_value = 1
 
         self.inputs.new('SdfNodeSocketInt', "x num")
@@ -30,11 +30,10 @@ class ArrayNode(bpy.types.Node, CustomNode):
     def gen_glsl_func(self):
         if self.inputs[4].links:
             s = self.inputs[0].default_value
-            x = float(self.inputs[1].default_value-1)
-            y = float(self.inputs[2].default_value-1)
-            z = float(self.inputs[3].default_value-1)
-            # l = self.inputs[1].default_value
-            #p-vec3({c[0],c[1],c[2]})*round(p/vec3({c[0],c[1],c[2]}));
+            x = float(self.inputs[1].default_value - 1)
+            y = float(self.inputs[2].default_value - 1)
+            z = float(self.inputs[3].default_value - 1)
+
             return f'''vec3 g_{self.index}(vec3 p){{
                     return p-{s}*clamp(round(p/{s}),vec3(0.0),vec3({x},{y},{z}));
                 }}

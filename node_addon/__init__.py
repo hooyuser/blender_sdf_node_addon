@@ -83,6 +83,8 @@ node_categories = [
                                                     label="Clipped Mirror"),
                            nodeitems_utils.NodeItem("Elongate",
                                                     label="Elongate"),
+                           nodeitems_utils.NodeItem("Bend", label="Bend"),
+                           nodeitems_utils.NodeItem("Twist", label="Twist"),
                        ]),
     CustomNodeCategory("OUTPUT_NODES",
                        "Output",
