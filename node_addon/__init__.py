@@ -77,6 +77,7 @@ node_categories = [
                            nodeitems_utils.NodeItem("Round", label="Round"),
                            nodeitems_utils.NodeItem("Solidify",
                                                     label="Solidify"),
+                           nodeitems_utils.NodeItem("Array", label="Array"),
                            nodeitems_utils.NodeItem("Mirror", label="Mirror"),
                            nodeitems_utils.NodeItem("ClippedMirror",
                                                     label="Clipped Mirror"),

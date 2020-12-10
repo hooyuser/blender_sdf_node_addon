@@ -159,3 +159,23 @@ class SdfNodeSocketOperation(bpy.types.NodeSocket):
 
     def draw_color(self, context, node):
         return (0.8, 0.3, 0.023, 1)
+
+
+class SdfNodeSocketInt(bpy.types.NodeSocket):
+    bl_idname = "SdfNodeSocketInt"
+    bl_label = "SDF Node Socket Int"
+
+    def default_value_callback(self, context):
+        Draw.update_callback(update_node=self.node)
+
+    default_value = bpy.props.IntProperty(update=default_value_callback)
+
+    # Optional function for drawing the socket input value
+    def draw(self, context, layout, node, text):
+        if self.is_output or self.is_linked:
+            layout.label(text=self.name)
+        else:
+            layout.prop(self, "default_value", text=self.name)
+
+    def draw_color(self, context, node):
+        return (0.7, 0.55, 0.2, 1)
