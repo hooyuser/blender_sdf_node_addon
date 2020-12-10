@@ -17,20 +17,34 @@ class ElongateNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self):
+    def gen_glsl_func(self):
         if self.inputs[1].links:
-            last = self.inputs[1].links[0].from_node.index
-            me = self.index
             h = self.inputs[0].default_value
+            return f'''vec3 g_{self.index}(vec3 p){{
+                    return p - clamp( p, -vec3({h[0]},{h[1]},{h[2]}), vec3({h[0]},{h[1]},{h[2]}));
+                }}
+                '''
+        else:
+            return ''
+
+    def gen_glsl(self, ref_stacks):
+        me = self.index
+        ref_i = self.ref_num
+        if self.inputs[1].links:
+            last_node = self.inputs[1].links[0].from_node
+            last = last_node.index
+            last_ref = ref_stacks[last].pop()
+
             glsl_p = f'''
-                vec3 p_{last} = p_{me} - clamp( p_{me}, -vec3({h[0]},{h[1]},{h[2]}), vec3({h[0]},{h[1]},{h[2]}));
+                vec3 p_{last}_{last_ref} = g_{me}(p_{me}_{ref_i});
             '''
             glsl_d = f'''
-                float d_{me} = d_{last};
+                float d_{me}_{ref_i}=d_{last}_{last_ref};
             '''
         else:
             glsl_p = ''
             glsl_d = f'''
-                float d_{me} = 2 * MAX_DIST;
+                float d_{me}_{ref_i} = 2 * MAX_DIST;
             '''
+
         return glsl_p, glsl_d

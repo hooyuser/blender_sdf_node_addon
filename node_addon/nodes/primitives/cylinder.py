@@ -21,12 +21,19 @@ class CylinderSDFNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self):
+    def gen_glsl_func(self):
         loc = self.inputs[2].default_value
         h = self.inputs[0].default_value
         r = self.inputs[1].default_value
+        return f'''
+            float f_{self.index}(vec3 p){{
+                vec2 e = abs(vec2(length(p.xz-vec2({loc[0]},{loc[2]})),p.y-({loc[1]}))) - vec2({r},{h});
+                return min(max(e.x,e.y),0.0) + length(max(e,0.0));
+            }}
+            '''
+
+    def gen_glsl(self, ref_stack):
         me = self.index
         return '', f'''
-            vec2 e_{me} = abs(vec2(length(p_{me}.xz-vec2({loc[0]},{loc[2]})),p_{me}.y-({loc[1]}))) - vec2({r},{h});
-            float d_{me} = min(max(e_{me}.x,e_{me}.y),0.0) + length(max(e_{me},0.0));
+            float d_{me}_{self.ref_num}=f_{me}(p_{me}_{self.ref_num});
         '''

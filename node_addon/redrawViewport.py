@@ -4,7 +4,7 @@ import gpu
 from gpu_extras.batch import batch_for_shader
 import math
 import mathutils
-import inspect
+# import inspect
 from bpy_extras import view3d_utils
 
 
@@ -17,41 +17,47 @@ class NodeList(object):
 
     def reset(self):
         self.node_list = []
+        self.ref_stacks = []
+        self.glsl_func_list = []
         self.glsl_p_list = []
         self.glsl_d_list = []
-        self.glsl_text = ''
+        self.glsl_func_text = ''
+        self.glsl_sdf_text = ''
+
+    def gen_node_info(self, node_in):
+        for node in self.tree.nodes:
+            node.index = -1
+            node.ref_num = 0
+        self.followLinks(node_in)
 
     def gen_node_list(self, node_in):
         self.reset()
         self.tree = bpy.context.space_data.edit_tree
-        for node in self.tree.nodes:
-            node.index = -1
-        self.followLinks(node_in)
+        self.gen_node_info(node_in)
         if self.node_list:
             num = len(self.node_list) - 1
-            self.glsl_p_list.reverse()
-            self.glsl_text = f'''
-            vec3 p_{num} = p;
-            ''' + ''.join(self.glsl_p_list) + ''.join(self.glsl_d_list) + f'''
-            return d_{num};
-            '''
-            inspect.cleandoc(self.glsl_text)
-        else:
-            self.glsl_text = 'return 2 * MAX_DIST;'
+            ref_n = self.node_list[num].ref_num
 
-    def update_glsl_text(self, node):
-        if self.node_list:
-            num = len(self.node_list) - 1
-            i = node.index
-            glsl = node.gen_glsl()
-            self.glsl_p_list[len(self.node_list) - 1 - i] = glsl[0]
-            self.glsl_d_list[i] = glsl[1]
-            self.glsl_text = f'''
-            vec3 p_{num} = p;
+            for node in self.node_list:
+                self.glsl_func_list.append(node.gen_glsl_func())
+            self.glsl_p_list.reverse()
+
+            self.glsl_sdf_text = f'''
+            vec3 p_{num}_{ref_n} = p;
             ''' + ''.join(self.glsl_p_list) + ''.join(self.glsl_d_list) + f'''
-            return d_{num};
+            return d_{num}_{ref_n};
             '''
-            inspect.cleandoc(self.glsl_text)
+            self.glsl_func_text = ''.join(self.glsl_func_list)
+            # inspect.cleandoc(self.glsl_sdf_text)
+
+        else:
+            self.glsl_sdf_text = 'return 2 * MAX_DIST;'
+
+    def update_glsl_func(self, node):
+        if self.node_list:
+            self.glsl_func_list[node.index] = node.gen_glsl_func()
+            self.glsl_func_text = ''.join(self.glsl_func_list)
+            # inspect.cleandoc(self.glsl_sdf_text)
 
     def followLinks(self, node_in):
 
@@ -65,10 +71,15 @@ class NodeList(object):
                     if node.index < 0:
                         node.index = len(self.node_list)
                         self.node_list.append(node)
-                        # print(node.name, ':', node.index)
-                        glsl = node.gen_glsl()
-                        self.glsl_p_list.append(glsl[0])
-                        self.glsl_d_list.append(glsl[1])
+                        self.ref_stacks.append([0])
+                    else:
+                        node.ref_num += 1
+                        self.ref_stacks[node.index].append(node.ref_num)
+
+                    # print(node.name, ':', node.index, node.ref_num)
+                    glsl = node.gen_glsl(self.ref_stacks)
+                    self.glsl_p_list.append(glsl[0])
+                    self.glsl_d_list.append(glsl[1])
 
 
 class Draw(object):
@@ -103,17 +114,14 @@ class Draw(object):
     #define MAX_MARCHING_STEPS 200
     #define MIN_DIST 0.0
     #define MAX_DIST 800.0
+    '''
 
-    float sphereSDF(vec3 samplePoint)
-    {
-        return length(samplePoint) - 1.0;
-    }
-
+    f_2 = '''
     float sceneSDF(vec3 p)
     {
     '''
 
-    f_2 = '''
+    f_3 = '''
     }
 
     vec3 calcNormal(vec3  p) { // for function f(p)
@@ -297,16 +305,6 @@ class Draw(object):
     @classmethod
     def gen_draw_handler(cls, update_node=False):
 
-        # print('GLSL:\n')
-        # nodetree = bpy.data.node_groups[
-        # "NodeTree"]   bpy.data.node_groups["NodeTree"].nodes.active   update_tag  interface_update
-        # no = nodetree.nodes[
-        # "Sphere SDF"]   bpy.data.node_groups["NodeTree"].nodes["Sphere SDF"].socket_value_update()
-        # x = no.inputs[0]
-        # y = x.default_value
-        # print(y)
-        # print('active_node', bpy.context.space_data.edit_tree)
-
         # class Node_OT_test(Operator):
         # bl_idname = "node.test"
         # bl_label  = "Test"
@@ -316,15 +314,17 @@ class Draw(object):
         # return {'FINISHED'}
 
         if update_node:
-            cls.glsl_nodes.update_glsl_text(update_node)
+            cls.glsl_nodes.update_glsl_func(update_node)
         else:
             cls.glsl_nodes.gen_node_list(
                 bpy.context.space_data.edit_tree.nodes["Viewer"])
-
-        # print(cls.glsl_nodes.glsl_text)
+        # print('GLSL:\n')
+        # print(cls.glsl_nodes.glsl_func_text)
+        # print(cls.glsl_nodes.glsl_sdf_text)
 
         shader = gpu.types.GPUShader(
-            cls.v_, cls.f_1 + cls.glsl_nodes.glsl_text + cls.f_2)
+            cls.v_, cls.f_1 + cls.glsl_nodes.glsl_func_text + cls.f_2 +
+            cls.glsl_nodes.glsl_sdf_text + cls.f_3)
 
         def draw():
             bgl.glEnable(bgl.GL_BLEND)
@@ -363,9 +363,12 @@ class Draw(object):
 
     @classmethod
     def update_callback(cls, update_node=False):
-        for node in bpy.context.space_data.edit_tree.nodes:
-            if node.bl_idname == 'Viewer':
-                # print('has Viewer')
-                if node.enabled and node.inputs[0].links:
-                    cls.refreshViewport(False, update_node)
-                    cls.refreshViewport(True, update_node)
+        if update_node and update_node.index < 0:
+            return
+        else:
+            for node in bpy.context.space_data.edit_tree.nodes:
+                if node.bl_idname == 'Viewer':
+                    # print('has Viewer')
+                    if node.enabled and node.inputs[0].links:
+                        cls.refreshViewport(False, update_node)
+                        cls.refreshViewport(True, update_node)

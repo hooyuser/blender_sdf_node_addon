@@ -46,37 +46,54 @@ class BoolNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "Distance")
 
-    def gen_glsl(self):
+    def gen_glsl_func(self):
+        if self.inputs[0].links or self.inputs[1].links:
+            if self.operation == "UNION":
+                return f'''float f_{self.index}(float d1, float d2){{
+                        return min(d1,d2);
+                    }}
+                    '''
+            elif self.operation == "INTERSECT":
+                return f'''float f_{self.index}(float d1, float d2){{
+                        return max(d1,d2);
+                    }}
+                    '''
+            else:
+                return f'''float f_{self.index}(float d1, float d2){{
+                        return max(d1,-d2);
+                    }}
+                    '''
+        else:
+            return ''
+
+    def gen_glsl(self, ref_stacks):
+        me = self.index
+        ref_i = self.ref_num
+
         if self.inputs[0].links:
-            input_0_p = self.inputs[0].links[0].from_node.index
-            input_0_d = 'd_' + str(input_0_p)
-            glsl_p = '''
-            vec3 p_%d=p_%d;
-            ''' % (input_0_p, self.index)
+            input_0 = self.inputs[0].links[0].from_node
+            input_0_p = input_0.index
+            input_0_ref = ref_stacks[input_0_p].pop()
+            input_0_d = f'd_{input_0_p}_{input_0_ref}'
+            glsl_p = f'''
+            vec3 p_{input_0_p}_{input_0_ref}=p_{me}_{ref_i};
+            '''
         else:
             input_0_d = '2.0 * MAX_DIST'
             glsl_p = ''
 
         if self.inputs[1].links:
-            input_1_p = self.inputs[1].links[0].from_node.index
-            input_1_d = 'd_' + str(input_1_p)
-            glsl_p += '''
-            vec3 p_%d=p_%d;
-            ''' % (input_1_p, self.index)
+            input_1 = self.inputs[1].links[0].from_node
+            input_1_p = input_1.index
+            input_1_ref = ref_stacks[input_1_p].pop()
+            input_1_d = f'd_{input_1_p}_{input_1_ref}'
+            glsl_p += f'''
+            vec3 p_{input_1_p}_{input_1_ref}=p_{me}_{ref_i};
+            '''
         else:
             input_1_d = '2.0 * MAX_DIST'
 
-        if self.operation == "UNION":
-            glsl_d = '''
-            float d_{}=min({},{});
-            '''.format(self.index, input_0_d, input_1_d)
-        elif self.operation == "INTERSECT":
-            glsl_d = '''
-            float d_{}=max({},{});
-            '''.format(self.index, input_0_d, input_1_d)
-        else:
-            glsl_d = '''
-            float d_{}=max({},-{});
-            '''.format(self.index, input_0_d, input_1_d)
-
+        glsl_d = f'''
+        float d_{me}_{ref_i}=f_{me}({input_0_d},{input_1_d});
+        '''
         return glsl_p, glsl_d

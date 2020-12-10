@@ -3,11 +3,11 @@ from ...base_types.base_node import CustomNode
 from ...redrawViewport import Draw
 
 
-class MirrorNode(bpy.types.Node, CustomNode):
-    '''Mirror node'''
+class ClippedMirrorNode(bpy.types.Node, CustomNode):
+    '''Clipped Mirror node'''
 
-    bl_idname = 'Mirror'
-    bl_label = 'Mirror'
+    bl_idname = 'ClippedMirror'
+    bl_label = 'Clipped Mirror'
     bl_icon = 'MOD_MIRROR'
 
     def update_prop(self, context):
@@ -32,9 +32,9 @@ class MirrorNode(bpy.types.Node, CustomNode):
 
     def gen_glsl_func(self):
         if self.inputs[0].links:
-            x = '-' if self.mirror_axis[0] else ''
-            y = '-' if self.mirror_axis[1] else ''
-            z = '-' if self.mirror_axis[2] else ''
+            x = 'abs' if self.mirror_axis[0] else ''
+            y = 'abs' if self.mirror_axis[1] else ''
+            z = 'abs' if self.mirror_axis[2] else ''
             return f'''vec3 g_{self.index}(vec3 p){{
                     return vec3({x}(p.x),{y}(p.y),{z}(p.z));
                 }}

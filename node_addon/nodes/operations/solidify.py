@@ -1,18 +1,17 @@
 import bpy
-
 from ...base_types.base_node import CustomNode
 
 
-class RoundNode(bpy.types.Node, CustomNode):
-    '''Round node'''
+class SolidifyNode(bpy.types.Node, CustomNode):
+    '''Solidify node'''
 
-    bl_idname = 'Round'
-    bl_label = 'Round'
+    bl_idname = 'Solidify'
+    bl_label = 'Solidify'
     bl_icon = 'MOD_CAST'
 
     def init(self, context):
 
-        self.inputs.new('SdfNodeSocketPositiveFloat', "Radius")
+        self.inputs.new('SdfNodeSocketPositiveFloat', "Thickness")
         self.inputs[0].default_value = 0.1
 
         self.inputs.new('NodeSocketFloat', "Distance")
@@ -24,7 +23,7 @@ class RoundNode(bpy.types.Node, CustomNode):
         if self.inputs[1].links:
             return f'''
                 float f_{self.index}(float d){{
-                    return d - {self.inputs[0].default_value};
+                    return abs(d) - {self.inputs[0].default_value};
                 }}
                 '''
         else:
@@ -44,6 +43,7 @@ class RoundNode(bpy.types.Node, CustomNode):
             glsl_d = f'''
                 float d_{me}_{ref_i}=f_{me}(d_{last}_{last_ref});
             '''
+
         else:
             glsl_p = ''
             glsl_d = f'''
