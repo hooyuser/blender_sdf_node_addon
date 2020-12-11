@@ -22,7 +22,7 @@ class BoxSDFNode(bpy.types.Node, CustomNode):
 
         self.inputs.new('SdfNodeSocketVectorTranslation', "Location")
 
-        self.outputs.new('NodeSocketFloat', "Distance")
+        self.outputs.new('NodeSocketFloat', "SDF")
 
     def gen_glsl_func(self):
         loc = self.inputs[3].default_value

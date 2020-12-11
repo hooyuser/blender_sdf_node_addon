@@ -26,8 +26,9 @@ class NodeList(object):
 
     def gen_node_info(self, node_in):
         for node in self.tree.nodes:
-            node.index = -1
-            node.ref_num = 0
+            if node.index > -2:
+                node.index = -1
+                node.ref_num = 0
         self.followLinks(node_in)
 
     def gen_node_list(self, node_in):
@@ -66,20 +67,21 @@ class NodeList(object):
                 to_name = node_link.to_socket.bl_idname
                 if node_link.from_socket.bl_idname == to_name:
                     node = node_link.from_node
-                    self.followLinks(node)
+                    if node.index > -2:
+                        self.followLinks(node)
 
-                    if node.index < 0:
-                        node.index = len(self.node_list)
-                        self.node_list.append(node)
-                        self.ref_stacks.append([0])
-                    else:
-                        node.ref_num += 1
-                        self.ref_stacks[node.index].append(node.ref_num)
+                        if node.index < 0:
+                            node.index = len(self.node_list)
+                            self.node_list.append(node)
+                            self.ref_stacks.append([0])
+                        else:
+                            node.ref_num += 1
+                            self.ref_stacks[node.index].append(node.ref_num)
 
-                    # print(node.name, ':', node.index, node.ref_num)
-                    glsl = node.gen_glsl(self.ref_stacks)
-                    self.glsl_p_list.append(glsl[0])
-                    self.glsl_d_list.append(glsl[1])
+                        # print(node.name, ':', node.index, node.ref_num)
+                        glsl = node.gen_glsl(self.ref_stacks)
+                        self.glsl_p_list.append(glsl[0])
+                        self.glsl_d_list.append(glsl[1])
 
 
 class Draw(object):
@@ -109,11 +111,129 @@ class Draw(object):
     uniform bool IsPers;
 
     #define PI 3.1415926535
-    #define EPSILON 0.001
+    #define EPSILON 0.0001
     #define UPPER 0.9999
-    #define MAX_MARCHING_STEPS 200
+    #define MAX_MARCHING_STEPS 256
     #define MIN_DIST 0.0
     #define MAX_DIST 800.0
+
+    uint hash( uint x ) {
+                    x += ( x << 10u );
+                    x ^= ( x >>  6u );
+                    x += ( x <<  3u );
+                    x ^= ( x >> 11u );
+                    x += ( x << 15u );
+                    return x;
+                }
+
+    uint hash( uvec2 v ) { return hash( v.x ^ hash(v.y)                         ); }
+    uint hash( uvec3 v ) { return hash( v.x ^ hash(v.y) ^ hash(v.z)             ); }
+    uint hash( uvec4 v ) { return hash( v.x ^ hash(v.y) ^ hash(v.z) ^ hash(v.w) ); }
+
+    float floatConstruct( uint m ) {
+        const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
+        const uint ieeeOne      = 0x3F800000u; // 1.0 in IEEE binary32
+
+        m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
+        m |= ieeeOne;                          // Add fractional part to 1.0
+
+        float  f = uintBitsToFloat( m );       // Range [1:2]
+        return f - 1.0;                        // Range [0:1]
+    }
+
+    float random( float x ) { return floatConstruct(hash(floatBitsToUint(x))); }
+    float random( vec2  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
+    float random( vec3  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
+    float random( vec4  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
+
+
+    //////////////////////////////////////////////////////////////////
+    //4D Simplex noise
+    //////////////////////////////////////////////////////////////////
+
+    vec4 mod289(vec4 x) {
+    return x - floor(x * (1.0 / 289.0)) * 289.0; 
+    }
+
+    float mod289(float x) {
+        return x - floor(x * (1.0 / 289.0)) * 289.0; 
+    }
+
+    vec4 permute(vec4 x) {
+        return mod289(((x*34.0)+1.0)*x);
+    }
+
+    float permute(float x) {
+        return mod289(((x*34.0)+1.0)*x);
+    }
+
+    vec4 taylorInvSqrt(vec4 r) {
+        return 1.79284291400159 - 0.85373472095314 * r;
+    }
+
+    float taylorInvSqrt(float r) {
+        return 1.79284291400159 - 0.85373472095314 * r;
+    }
+
+    vec4 grad4(float j, vec4 ip) {
+        const vec4 ones = vec4(1.0, 1.0, 1.0, -1.0);
+        vec4 p,s;
+
+        p.xyz = floor( fract (vec3(j) * ip.xyz) * 7.0) * ip.z - 1.0;
+        p.w = 1.5 - dot(abs(p.xyz), ones.xyz);
+        s = vec4(lessThan(p, vec4(0.0)));
+        p.xyz = p.xyz + (s.xyz*2.0 - 1.0) * s.www;
+
+        return p;
+    }
+                 
+    // (sqrt(5) - 1)/4 = F4, used once below
+    #define F4 0.309016994374947451
+
+    //////////////////////////////////////////////////////////////////
+    // 3D Value Noise
+    //////////////////////////////////////////////////////////////////
+
+    float hash1(float n) {
+        return fract( n*17.0*fract( n*0.3183099 ) );
+    }
+
+    // Taken from Inigo Quilez's Rainforest ShaderToy:
+    // https://www.shadertoy.com/view/4ttSWf
+    float valueNoise(in vec3 x)
+    {
+        vec3 p = floor(x);
+        vec3 w = fract(x);
+        
+        vec3 u = w*w*w*(w*(w*6.0-15.0)+10.0);
+        
+        float n = p.x + 317.0*p.y + 157.0*p.z;
+        
+        float a = hash1(n+0.0);
+        float b = hash1(n+1.0);
+        float c = hash1(n+317.0);
+        float d = hash1(n+318.0);
+        float e = hash1(n+157.0);
+        float f = hash1(n+158.0);
+        float g = hash1(n+474.0);
+        float h = hash1(n+475.0);
+
+        float k0 =   a;
+        float k1 =   b - a;
+        float k2 =   c - a;
+        float k3 =   e - a;
+        float k4 =   a - b - c + d;
+        float k5 =   a - c - e + g;
+        float k6 =   a - b - e + f;
+        float k7 = - a + b + c - d + e - f - g + h;
+
+        return -1.0+2.0*(k0 + k1*u.x + k2*u.y + k3*u.z + k4*u.x*u.y + k5*u.y*u.z + k6*u.z*u.x + k7*u.x*u.y*u.z);
+    }
+
+    const mat3 m3  = mat3( 0.00,  0.80,  0.60,
+                        -0.80,  0.36, -0.48,
+                        -0.60, -0.48,  0.64 );
+
     '''
 
     f_2 = '''

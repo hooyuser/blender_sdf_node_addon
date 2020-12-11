@@ -30,7 +30,7 @@ class ViewerNode(bpy.types.Node, CustomNode):
     #         Draw.refreshViewport(True)
 
     def init(self, context):
-        self.inputs.new('NodeSocketFloat', "Distance")
+        self.inputs.new('NodeSocketFloat', "SDF")
         self.inputs[0].hide_value = True
 
     def free(self):

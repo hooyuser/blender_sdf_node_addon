@@ -66,12 +66,9 @@ node_categories = [
             nodeitems_utils.NodeItem("CylinderSDF", label="Cylinder"),
             nodeitems_utils.NodeItem("ConeSDF", label="Cone")
         ]),
-    CustomNodeCategory("OPERATIONS_NODES",
-                       "Operations",
+    CustomNodeCategory("OPERATION_NODES",
+                       "Operation",
                        items=[
-                           nodeitems_utils.NodeItem("Bool", label="Bool"),
-                           nodeitems_utils.NodeItem("SmoothBool",
-                                                    label="Smooth Bool"),
                            nodeitems_utils.NodeItem("Transform",
                                                     label="Transform"),
                            nodeitems_utils.NodeItem("Round", label="Round"),
@@ -86,30 +83,56 @@ node_categories = [
                            nodeitems_utils.NodeItem("Bend", label="Bend"),
                            nodeitems_utils.NodeItem("Twist", label="Twist"),
                        ]),
+    CustomNodeCategory("CONSTRUCTION_NODES",
+                       "Construction",
+                       items=[
+                           nodeitems_utils.NodeItem("Bool", label="Bool"),
+                           nodeitems_utils.NodeItem("SmoothBool",
+                                                    label="Smooth Bool"),
+                           nodeitems_utils.NodeItem("Blend", label="Blend"),
+                       ]),
+    CustomNodeCategory("DISPLACEMENT_NODES",
+                       "Displacement",
+                       items=[
+                           nodeitems_utils.NodeItem("SimplexNoise",
+                                                    label="Simplex Noise"),
+                           nodeitems_utils.NodeItem("FbmNoise",
+                                                    label="FBM Noise"),
+                           nodeitems_utils.NodeItem("WhiteNoise",
+                                                    label="White Noise"),
+                       ]),
+    CustomNodeCategory("INPUT_NODES",
+                       "Input",
+                       items=[
+                           nodeitems_utils.NodeItem("FloatInput",
+                                                    label="Float"),
+                           nodeitems_utils.NodeItem("IntegerInput",
+                                                    label="Integer"),
+                       ]),
     CustomNodeCategory("OUTPUT_NODES",
                        "Output",
                        items=[
                            nodeitems_utils.NodeItem("Viewer", label="Viewer"),
                        ]),
-    CustomNodeCategory(
-        "MISC_NODES",
-        "Misc",
-        items=[
-            # the nodes (items) in this category are instantiated in this list
-            #   with the 'nodeitems_utils.NodeItem' class, which can have
-            #   additional settings
-            # the first argument is the node class idname we want to add
-            # then there can be keyword arguments like label
-            # another argument can be a 'settings' keyword argument
-            #   that takes a dictionary that can override default values of all
-            #   properties
-            #   NOTE: use 'repr()' to convert the value to string IMPORTANT
-            nodeitems_utils.NodeItem("Add",
-                                     label="Add",
-                                     settings={"intProp": repr(1.0)}),
-            # minimalistic node addition is like this
-            # nodeitems_utils.NodeItem("CustomSimpleInputNode"),
-        ]),
+    # CustomNodeCategory(
+    #     "MISC_NODES",
+    #     "Misc",
+    #     items=[
+    #         # the nodes (items) in this category are instantiated in this list
+    #         #   with the 'nodeitems_utils.NodeItem' class, which can have
+    #         #   additional settings
+    #         # the first argument is the node class idname we want to add
+    #         # then there can be keyword arguments like label
+    #         # another argument can be a 'settings' keyword argument
+    #         #   that takes a dictionary that can override default values of all
+    #         #   properties
+    #         #   NOTE: use 'repr()' to convert the value to string IMPORTANT
+    #         nodeitems_utils.NodeItem("Add",
+    #                                  label="Add",
+    #                                  settings={"intProp": repr(1.0)}),
+    #         # minimalistic node addition is like this
+    #         # nodeitems_utils.NodeItem("CustomSimpleInputNode"),
+    #     ]),
 ]
 
 auto_load.init()

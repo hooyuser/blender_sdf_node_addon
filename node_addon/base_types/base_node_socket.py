@@ -33,16 +33,15 @@ class CustomNodeSocket(bpy.types.NodeSocket):
         return (1, 1, 1, 1)
 
 
-class SdfNodeSocketPositiveFloat(bpy.types.NodeSocket):
-    bl_idname = "SdfNodeSocketPositiveFloat"
-    bl_label = "SDF Node Socket Positive Float"
+class SdfNodeSocketPositiveInt(bpy.types.NodeSocket):
+    bl_idname = "SdfNodeSocketPositiveInt"
+    bl_label = "SDF Node Socket Positive Int"
 
     def default_value_callback(self, context):
         Draw.update_callback(update_node=self.node)
 
-    default_value = bpy.props.FloatProperty(subtype='UNSIGNED',
-                                            min=0.0,
-                                            update=default_value_callback)
+    default_value = bpy.props.IntProperty(soft_min=0,
+                                          update=default_value_callback)
 
     # Optional function for drawing the socket input value
     def draw(self, context, layout, node, text):
@@ -52,7 +51,7 @@ class SdfNodeSocketPositiveFloat(bpy.types.NodeSocket):
             layout.prop(self, "default_value", text=self.name)
 
     def draw_color(self, context, node):
-        return (0.643, 0.788, 0.824, 1)
+        return (0.7, 0.55, 0.2, 1)
 
 
 class SdfNodeSocketFloat(bpy.types.NodeSocket):
@@ -73,6 +72,27 @@ class SdfNodeSocketFloat(bpy.types.NodeSocket):
 
     def draw_color(self, context, node):
         return (0.4, 0.5, 0.6, 1)
+
+
+class SdfNodeSocketPositiveFloat(bpy.types.NodeSocket):
+    bl_idname = "SdfNodeSocketPositiveFloat"
+    bl_label = "SDF Node Socket Positive Float"
+
+    def default_value_callback(self, context):
+        Draw.update_callback(update_node=self.node)
+
+    default_value = bpy.props.FloatProperty(soft_min=0.0,
+                                            update=default_value_callback)
+
+    # Optional function for drawing the socket input value
+    def draw(self, context, layout, node, text):
+        if self.is_output or self.is_linked:
+            layout.label(text=self.name)
+        else:
+            layout.prop(self, "default_value", text=self.name)
+
+    def draw_color(self, context, node):
+        return (0.643, 0.788, 0.824, 1)
 
 
 class SdfNodeSocketFloatVector(bpy.types.NodeSocket):
@@ -159,24 +179,3 @@ class SdfNodeSocketOperation(bpy.types.NodeSocket):
 
     def draw_color(self, context, node):
         return (0.8, 0.3, 0.023, 1)
-
-
-class SdfNodeSocketInt(bpy.types.NodeSocket):
-    bl_idname = "SdfNodeSocketInt"
-    bl_label = "SDF Node Socket Int"
-
-    def default_value_callback(self, context):
-        Draw.update_callback(update_node=self.node)
-
-    default_value = bpy.props.IntProperty(soft_min=0,
-                                          update=default_value_callback)
-
-    # Optional function for drawing the socket input value
-    def draw(self, context, layout, node, text):
-        if self.is_output or self.is_linked:
-            layout.label(text=self.name)
-        else:
-            layout.prop(self, "default_value", text=self.name)
-
-    def draw_color(self, context, node):
-        return (0.7, 0.55, 0.2, 1)
