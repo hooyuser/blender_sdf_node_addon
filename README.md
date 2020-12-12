@@ -1,5 +1,5 @@
 # Blender SDF Node Addon
-Visualize 3D Signed Distance Field in Blender with Node System.
+Visualize 3D Signed Distance Field with Node System in Blender.
 
 ## Features
 * Node system which allows real-time viewport update
