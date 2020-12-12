@@ -2,7 +2,7 @@
 Visualize 3D Signed Distance Field in Blender with Node System.
 
 **Features**:
-* Node system which allows real-time update
+* Node system which allows real-time viewport update
 * Support combination of primitives, including *Union*, *Subtraction*, *Intersection*, *Blend shape*
 * Support most of the SDF operations listed in the website https://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
 * FBM noise displacement
