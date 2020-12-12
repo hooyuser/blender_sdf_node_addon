@@ -1,14 +1,14 @@
 # Blender SDF Node Addon
 Visualize 3D Signed Distance Field in Blender with Node System.
 
-**Features**:
+## Features
 * Node system which allows real-time viewport update
 * Support combination of primitives, including *Union*, *Subtraction*, *Intersection*, *Blend shape*
 * Support most of the SDF operations listed in the website https://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
 * FBM noise displacement
 * Basic PBR rendering
 
-**To-Do List**:
+## To-Do List
 * Render
   - [ ] Volume rendering
   - [ ] Matcap shading
