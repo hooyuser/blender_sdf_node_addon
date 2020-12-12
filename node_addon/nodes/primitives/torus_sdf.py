@@ -21,6 +21,8 @@ class TorusSDFNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "SDF")
 
+        self.width = 153
+
     def gen_glsl_func(self):
         loc = self.inputs[2].default_value
 

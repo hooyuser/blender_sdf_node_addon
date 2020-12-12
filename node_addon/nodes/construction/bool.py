@@ -1,4 +1,5 @@
 import bpy
+
 from ...base_types.base_node import CustomNode
 from ...redrawViewport import Draw
 
@@ -31,7 +32,6 @@ class BoolNode(bpy.types.Node, CustomNode):
                                        update=update_prop)
 
     def draw_buttons(self, context, layout):
-
         layout.prop(self, "operation", text="")
 
     def draw_label(self):

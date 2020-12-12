@@ -49,9 +49,11 @@ class SmoothBoolNode(bpy.types.Node, CustomNode):
 
         self.outputs.new('NodeSocketFloat', "SDF")
 
+        self.width = 147
+
     def gen_glsl_func(self):
         k = self.inputs[0].default_value
-        
+
         if self.operation == "S_UNION":
             return f'''float f_{self.index}(float d1, float d2){{
                     float h = max({k}-abs(d1-d2),0.0);
