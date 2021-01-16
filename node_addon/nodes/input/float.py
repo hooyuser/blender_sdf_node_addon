@@ -16,13 +16,12 @@ class FloatInputNode(bpy.types.Node, CustomNode):
     def update_prop(self, context):
         for link in self.outputs[0].links:
             link.to_socket.default_value = self.value
-            Draw.update_callback(update_node=link.to_node)
+            # Draw.update_callback(update_node=link.to_node)
 
     value = bpy.props.FloatProperty(update=update_prop)
 
     def init(self, context):
-        self.index = -2
-
+        self.index = -3
         self.outputs.new('SdfNodeSocketFloat', "Value")
 
     def draw_buttons(self, context, layout):

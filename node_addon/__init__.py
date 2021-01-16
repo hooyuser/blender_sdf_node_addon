@@ -114,6 +114,12 @@ node_categories = [
                        items=[
                            nodeitems_utils.NodeItem("Viewer", label="Viewer"),
                        ]),
+    CustomNodeCategory("MATH_NODES",
+                       "Math",
+                       items=[
+                           nodeitems_utils.NodeItem("FloatMath",
+                                                    label="Float Math"),
+                       ]),
     # CustomNodeCategory(
     #     "MISC_NODES",
     #     "Misc",

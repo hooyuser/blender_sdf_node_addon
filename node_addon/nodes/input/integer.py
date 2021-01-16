@@ -1,7 +1,12 @@
 import bpy
-from ...base_types.base_node import CustomNode
 
-int_category = ['SdfNodeSocketPositiveInt']
+from ...base_types.base_node import CustomNode
+from ...redrawViewport import Draw
+
+int_category = [
+    'SdfNodeSocketPositiveInt', 'SdfNodeSocketFloat',
+    'SdfNodeSocketPositiveFloat'
+]
 
 
 class IntegerInputNode(bpy.types.Node, CustomNode):
@@ -11,11 +16,15 @@ class IntegerInputNode(bpy.types.Node, CustomNode):
     bl_label = 'Integer'
     bl_icon = 'ITALIC'
 
-    value = bpy.props.IntProperty()
+    def update_prop(self, context):
+        for link in self.outputs[0].links:
+            link.to_socket.default_value = self.value
+            # Draw.update_callback(update_node=link.to_node)
+
+    value = bpy.props.IntProperty(update=update_prop)
 
     def init(self, context):
-        self.index = -2
-
+        self.index = -3
         self.outputs.new('SdfNodeSocketPositiveInt', "Value")
 
     def draw_buttons(self, context, layout):

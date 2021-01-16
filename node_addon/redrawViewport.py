@@ -458,12 +458,6 @@ class Draw(object):
                         cls.config["light"] = mathutils.Vector(
                             cls.rot(cls.config["cam"], 30, -30))
 
-                        # print(cls.config["is_perspective"], cls.config["cam"])
-
-                        # print((-inv_view.col[2].xyz).normalized())
-
-    # vertices = ((0, 0), (600, 0), (0, 600), (600, 600))
-
     indices = ((0, 1, 2), (2, 1, 3))
 
     @classmethod
@@ -474,24 +468,6 @@ class Draw(object):
                     for region in area.regions:
                         if region.type == 'WINDOW':
                             region.tag_redraw()
-
-    # @classmethod
-    # def draw(cls):
-    #     bgl.glEnable(bgl.GL_BLEND)
-    #     cls.shader.bind()
-    #     cls.update_config()
-    #     [width, height] = cls.config["size"]
-    #     cls.shader.uniform_float("ViewInv", cls.config["inv_view_matrix"])
-    #     cls.shader.uniform_float("PersInv", cls.config["inv_pers_matrix"])
-    #     cls.shader.uniform_float("Size", (width, height))
-    #     cls.shader.uniform_float("CamLoc", cls.config["cam"])
-    #     cls.shader.uniform_float("LightLoc", cls.config["light"])
-    #     cls.shader.uniform_bool("IsPers", (cls.config["is_perspective"], ))
-    #     vertices = ((0, 0), (width, 0), (0, height), (width, height))
-    #     batch = batch_for_shader(cls.shader,
-    #                              'TRIS', {"pos": vertices},
-    #                              indices=cls.indices)
-    #     batch.draw(cls.shader)
 
     @classmethod
     def render(cls, context):
@@ -516,7 +492,7 @@ class Draw(object):
             w_matrix[1][1] = w_matrix[0][0] * WIDTH / HEIGHT
         else:
             w_matrix[0][0] = w_matrix[1][1] * HEIGHT / WIDTH
-        inv_pers = (w_matrix@v_matrix).inverted().transposed()
+        inv_pers = (w_matrix @ v_matrix).inverted().transposed()
 
         with offscreen.bind():
             bgl.glClearColor(0.2, 0.2, 0.2, 1.0)
@@ -557,18 +533,6 @@ class Draw(object):
 
                 batch.draw(shader)
 
-                # bgl.glEnable(bgl.GL_BLEND)
-                # cls.shader = gpu.types.GPUShader(
-                #     cls.v_, cls.f_1 + cls.glsl_nodes.glsl_func_text + cls.f_2 +
-                #     cls.glsl_nodes.glsl_sdf_text + cls.f_3)
-                # cls.shader.bind()
-
-                # vertices = ((0, 0), (WIDTH, 0), (0, HEIGHT), (WIDTH, HEIGHT))
-                # batch = batch_for_shader(cls.shader,
-                #                          'TRIS', {"pos": vertices},
-                #                          indices=cls.indices)
-                # batch.draw(cls.shader)
-
             buffer = bgl.Buffer(bgl.GL_FLOAT, WIDTH * HEIGHT * 4)
             bgl.glReadBuffer(bgl.GL_BACK)
             bgl.glReadPixels(0, 0, WIDTH, HEIGHT, bgl.GL_RGBA, bgl.GL_FLOAT,
@@ -586,14 +550,6 @@ class Draw(object):
 
     @classmethod
     def gen_draw_handler(cls, update_node=False):
-
-        # class Node_OT_test(Operator):
-        # bl_idname = "node.test"
-        # bl_label  = "Test"
-        # def execute(self, context):
-        # selection = context.selected_nodes
-        #     print(selection)
-        # return {'FINISHED'}
 
         if update_node:
             cls.glsl_nodes.update_glsl_func(update_node)
@@ -645,7 +601,9 @@ class Draw(object):
 
     @classmethod
     def update_callback(cls, update_node=False):
-        if update_node and update_node.index < 0:
+        if update_node and update_node.index <= -2:  # update_node is math node
+            update_node.update()
+        elif update_node and update_node.index < 0:
             return
         else:
             for node in bpy.context.space_data.edit_tree.nodes:
