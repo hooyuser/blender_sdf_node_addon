@@ -17,7 +17,7 @@ Visualize 3D Signed Distance Field with Node System in Blender.
 * Improve Node System
   - [ ] Animation system
   - [ ] Support more input types, such as *Object Info Input*
-  - [ ] Support math operations
+  - [x] Support math operations
   - [ ] Support creating node groups
 * Other Functions
   - [ ] Convert mesh to SDF
