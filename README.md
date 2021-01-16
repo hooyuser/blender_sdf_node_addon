@@ -13,7 +13,7 @@ Visualize 3D Signed Distance Field with Node System in Blender.
   - [ ] Volume rendering
   - [ ] Matcap shading
   - [ ] Image-based lighting
-  - [ ] Image Output
+  - [x] Image Output
 * Improve Node System
   - [ ] Animation system
   - [ ] Support more input types, such as *Object Info Input*
