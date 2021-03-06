@@ -2,7 +2,27 @@ import bpy
 import numblend as nb
 import taichi as ti
 
-from .PBD_stretch_bend_gpu import TiData
+from .PBD_stretch_bend_gpu import TiClothSimulation
+
+cloth_simulations = []
+
+
+class ProcessingGeometryOperator(bpy.types.Operator):
+    """Tooltip"""
+    bl_idname = "object.processing_geometry_operator"
+    bl_label = "Processing Geometry Operator"
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def execute(self, context):
+        scene = context.scene
+        ti_device = ti.gpu if scene.sdf_physics.device == 'GPU' else ti.cpu
+        ti.init(arch=ti_device, debug=False)
+        cloth_simulations.append(
+            TiClothSimulation(scene.sdf_physics, scene.frame_end))
+        return {'FINISHED'}
 
 
 class SimulateOperator(bpy.types.Operator):
@@ -16,11 +36,7 @@ class SimulateOperator(bpy.types.Operator):
 
     def execute(self, context):
         nb.init()
-        scene = context.scene
-        ti_device = ti.gpu if scene.sdf_physics.device == 'GPU' else ti.cpu
-        ti.init(arch=ti_device, debug=False)
-        data = TiData(scene.sdf_physics, scene.frame_end)
-        data.animate()
+        cloth_simulations[0].animate()
         return {'FINISHED'}
 
 
@@ -40,6 +56,8 @@ class ClothPhysicsPanel(bpy.types.Panel):
 
         # row = layout.row()
         # row.label(text="Hello world!", icon='WORLD_DATA')
+        row = layout.row()
+        row.label(text="Geometry Processing:")
 
         row = layout.row()
         row.prop(sdf_phy, "cloth_obj")
@@ -53,14 +71,26 @@ class ClothPhysicsPanel(bpy.types.Panel):
                             text="Pin")
 
             row = layout.row()
-            row.prop_search(sdf_phy,
-                            "attach_group",
-                            sdf_phy.cloth_obj,
-                            "vertex_groups",
-                            text="Attach")
+            row.prop(sdf_phy, "enable_LRA")
+
+            if sdf_phy.enable_LRA:
+                row = layout.row()
+                row.prop_search(sdf_phy,
+                                "attach_group",
+                                sdf_phy.cloth_obj,
+                                "vertex_groups",
+                                text="Attach")
 
         row = layout.row()
         row.prop(sdf_phy, "c_obj")
+
+        row = layout.row()
+        row.prop(sdf_phy, "device")
+
+        if sdf_phy.cloth_obj:
+            row = layout.row()
+            row.operator("object.processing_geometry_operator",
+                         text="Processing")
 
         row = layout.row()
         row.separator()
@@ -69,7 +99,16 @@ class ClothPhysicsPanel(bpy.types.Panel):
         row.label(text="Simulation Setting:")
 
         row = layout.row()
-        row.prop(sdf_phy, "device")
+        row.prop(sdf_phy, "substep_num")
+
+        row = layout.row()
+        row.prop(sdf_phy, "solver_num")
+
+        row = layout.row()
+        row.prop(sdf_phy, "time_step")
+
+        row = layout.row()
+        row.prop(sdf_phy, "drag_damping")
 
         if sdf_phy.cloth_obj and sdf_phy.c_obj:
             row = layout.row()
