@@ -1,7 +1,7 @@
 import bpy
 
 from ...base_types.base_node import CustomNode
-from ...redrawViewport import Draw
+# from ...redrawViewport import Draw
 
 float_category = ['SdfNodeSocketFloat', 'SdfNodeSocketPositiveFloat']
 

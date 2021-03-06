@@ -516,7 +516,7 @@ class Draw(object):
                 shader.uniform_float("ViewInv", cls.config["inv_view_matrix"])
 
                 shader.uniform_float("PersInv", inv_pers)
-                shader.uniform_float("Size", (1920, 1080))
+                shader.uniform_float("Size", (WIDTH, HEIGHT))
                 shader.uniform_float("CamLoc", cls.config["cam"])
                 shader.uniform_float("LightLoc", cls.config["light"])
                 shader.uniform_bool("IsPers", (cls.config["is_perspective"], ))

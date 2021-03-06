@@ -11,10 +11,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import nodeitems_utils
 
 from . import auto_load
 from .redrawViewport import Draw
+from .physics.physics_status import SdfProps
 
 bl_info = {
     "name": "sdf node",
@@ -148,11 +150,16 @@ def register():
     auto_load.register()
     nodeitems_utils.register_node_categories("CUSTOM_NODES", node_categories)
 
+    bpy.types.Scene.sdf_physics = bpy.props.PointerProperty(type=SdfProps)
+
 
 def unregister():
     Draw.refreshViewport(False)
+
     auto_load.unregister()
     nodeitems_utils.unregister_node_categories("CUSTOM_NODES")
+
+    del bpy.types.Scene.sdf_physics
 
 
 if __name__ == '__main__':
