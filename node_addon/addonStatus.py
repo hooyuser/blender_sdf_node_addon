@@ -9,14 +9,14 @@ class Status(object):
     @staticmethod
     def exist_node_tree():
         for node_tree in bpy.data.node_groups:
-            if node_tree.bl_idname == 'CustomNodeTree':
+            if node_tree.bl_idname == 'SDFNodeTree':
                 return True
         return False
 
     @staticmethod
     def exist_viewer():
         for node_tree in bpy.data.node_groups:
-            if node_tree.bl_idname == 'CustomNodeTree':
+            if node_tree.bl_idname == 'SDFNodeTree':
                 for node in node_tree.nodes:
                     if node.bl_idname == 'Viewer':
                         return True

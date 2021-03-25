@@ -35,7 +35,7 @@ class CustomNodeCategory(nodeitems_utils.NodeCategory):
     #   the categories made with this class belong to (is visible to)
     @classmethod
     def poll(cls, context):
-        return context.space_data.tree_type == 'CustomNodeTree'
+        return context.space_data.tree_type == 'SDFNodeTree'
 
 
 node_categories = [
@@ -110,6 +110,8 @@ node_categories = [
                                                     label="Float"),
                            nodeitems_utils.NodeItem("IntegerInput",
                                                     label="Integer"),
+                           nodeitems_utils.NodeItem("ObjectInfo",
+                                                    label="Object Info"),
                        ]),
     CustomNodeCategory("OUTPUT_NODES",
                        "Output",

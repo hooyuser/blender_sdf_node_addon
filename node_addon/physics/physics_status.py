@@ -1,6 +1,10 @@
 import bpy
 
 
+def scene_mychosenobject_poll(self, nodeTree):
+    return nodeTree.bl_idname == 'SDFNodeTree'
+
+
 class SdfProps(bpy.types.PropertyGroup):
     cloth_obj: bpy.props.PointerProperty(name="Cloth",
                                          type=bpy.types.Object,
@@ -14,6 +18,10 @@ class SdfProps(bpy.types.PropertyGroup):
     c_obj: bpy.props.PointerProperty(name="Collision",
                                      type=bpy.types.Object,
                                      description="Collision Mesh")
+    c_sdf: bpy.props.PointerProperty(name="SDF",
+                                     type=bpy.types.NodeTree,
+                                     description="Collision SDF",
+                                     poll=scene_mychosenobject_poll)
     device: bpy.props.EnumProperty(name="Device",
                                    items=[('GPU', 'GPU', 'GPU'),
                                           ('CPU', 'CPU', 'CPU')],

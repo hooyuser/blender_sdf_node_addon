@@ -20,6 +20,7 @@ class ProcessingGeometryOperator(bpy.types.Operator):
         scene = context.scene
         ti_device = ti.gpu if scene.sdf_physics.device == 'GPU' else ti.cpu
         ti.init(arch=ti_device, debug=False)
+        cloth_simulations.clear()
         cloth_simulations.append(
             TiClothSimulation(scene.sdf_physics, scene.frame_end))
         return {'FINISHED'}
@@ -83,6 +84,9 @@ class ClothPhysicsPanel(bpy.types.Panel):
 
         row = layout.row()
         row.prop(sdf_phy, "c_obj")
+
+        row = layout.row()
+        row.prop(sdf_phy, "c_sdf")
 
         row = layout.row()
         row.prop(sdf_phy, "device")

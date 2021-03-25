@@ -3,7 +3,7 @@ from ..redrawViewport import Draw
 
 
 class CustomNode(object):
-    # this line makes the node visible only to the 'CustomNodeTree'
+    # this line makes the node visible only to the 'SDFNodeTree'
     #   node tree, essentially checking context
     bpy.types.Node.index = bpy.props.IntProperty()
     # index = -1: to be searched. index = -2: will not be searched
@@ -13,7 +13,7 @@ class CustomNode(object):
 
     @classmethod
     def poll(cls, ntree):
-        return ntree.bl_idname == 'CustomNodeTree'
+        return ntree.bl_idname == 'SDFNodeTree'
 
     def update(self):
         if self.outputs:

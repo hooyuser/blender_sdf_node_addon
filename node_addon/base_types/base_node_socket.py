@@ -145,7 +145,7 @@ class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket):
     # Optional function for drawing the socket input value
     def draw(self, context, layout, node, text):
         if self.is_output or self.is_linked:
-            layout.label(text)
+            layout.label(text=text)
         else:
             col = layout.column()
             col.prop(self, "default_value", text=text)

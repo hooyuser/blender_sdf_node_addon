@@ -606,7 +606,8 @@ class Draw(object):
         elif update_node and update_node.index < 0:
             return
         else:
-            for node in bpy.context.space_data.edit_tree.nodes:
+            nodetree = update_node.id_data if update_node else bpy.context.space_data.edit_tree
+            for node in nodetree.nodes:
                 if node.bl_idname == 'Viewer':
                     # print('has Viewer')
                     if node.enabled and node.inputs[0].links:

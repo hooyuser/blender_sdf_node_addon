@@ -1,7 +1,6 @@
 import bpy
 
 from ...base_types.base_node import CustomNode
-from ...redrawViewport import Draw
 
 int_category = [
     'SdfNodeSocketPositiveInt', 'SdfNodeSocketFloat',
@@ -10,7 +9,7 @@ int_category = [
 
 
 class IntegerInputNode(bpy.types.Node, CustomNode):
-    '''An Integer input node'''
+    '''An integer input node'''
 
     bl_idname = 'IntegerInput'
     bl_label = 'Integer'
