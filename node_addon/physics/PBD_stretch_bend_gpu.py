@@ -144,108 +144,60 @@ class TiClothSimulation:
         self.set_edges()
         self.set_faces()
 
+    @ti.func
+    def project_constraints(self, n):
+        if ti.static(self.enable_LRA):
+            for vi in range(self.vertex_num):
+                for att in range(self.attach_num):
+                    if self.w[vi] > eps:
+                        dist = (self.p[vi] - self.attach_pos[att]).norm()
+                        dist_diff = dist - self.tether_len[vi, att]
+                        if dist_diff / self.tether_len[vi, att] > tether_give:
+                            dp = -0.5 * self.w[vi] * dist_diff * (
+                                self.p[vi] - self.attach_pos[att]) / dist
+                            self.p[vi] += k_LRA * dp
+        #    if w[vi] > eps and dist - coll_r < 0:
+        # print(attach[0])
+
+        for l in range(self.link_num):
+            p0 = self.link[l][0]
+            p1 = self.link[l][1]
+            p_01 = self.p[p0] - self.p[p1]
+
+            kp = 1 - pow((1 - self.link_k[l]), 1 / (n + 1))
+
+            length = self.link_len[l]
+            if self.w[p0] > eps:
+                dp0 = -0.5 * self.w[p0] * (p_01.norm() -
+                                           length) * p_01.normalized()
+                self.p[self.link[l][0]] += kp * dp0
+
+            if self.w[p1] > eps:
+                dp1 = 0.5 * self.w[p1] * (p_01.norm() -
+                                          length) * p_01.normalized()
+                self.p[self.link[l][1]] += kp * dp1
+
+        for vi in range(self.vertex_num):
+            if self.w[vi] > eps:
+                dist = (self.p[vi] - self.coll_origin[0]).norm()
+                dist_diff = dist - coll_r
+                if dist_diff < 0:
+                    dp = -dist_diff / dist * (self.p[vi] - self.coll_origin[0])
+                    self.p[vi] += dp
+
     @ti.kernel
-    def substep_cpu(self):
+    def substep(self):
         for i in range(self.vertex_num):
             self.v[i] += self.dt * ti.Vector([0, 0, -9.8]) * self.w[i]
             self.v[i] *= ti.exp(-self.dt * self.drag_damping)
             self.p[i] = self.x[i] + self.dt * self.v[i]
 
-        for n in range(self.solver_num):
-            if ti.static(self.enable_LRA):
-                for vi in range(self.vertex_num):
-                    for att in range(self.attach_num):
-                        if self.w[vi] > eps:
-                            dist = (self.p[vi] - self.attach_pos[att]).norm()
-                            dist_diff = dist - self.tether_len[vi, att]
-                            if dist_diff / self.tether_len[vi,
-                                                           att] > tether_give:
-                                dp = -0.5 * self.w[vi] * dist_diff * (
-                                    self.p[vi] - self.attach_pos[att]) / dist
-                                self.p[vi] += k_LRA * dp
-            #    if w[vi] > eps and dist - coll_r < 0:
-            # print(attach[0])
-
-            for l in range(self.link_num):
-                p0 = self.link[l][0]
-                p1 = self.link[l][1]
-                p_01 = self.p[p0] - self.p[p1]
-
-                kp = 1 - pow((1 - self.link_k[l]), 1 / (n + 1))
-
-                length = self.link_len[l]
-                if self.w[p0] > eps:
-                    dp0 = -0.5 * self.w[p0] * (p_01.norm() -
-                                               length) * p_01.normalized()
-                    self.p[self.link[l][0]] += kp * dp0
-
-                if self.w[p1] > eps:
-                    dp1 = 0.5 * self.w[p1] * (p_01.norm() -
-                                              length) * p_01.normalized()
-                    self.p[self.link[l][1]] += kp * dp1
-
-            for vi in range(self.vertex_num):
-                if self.w[vi] > eps:
-                    dist = (self.p[vi] - self.coll_origin[0]).norm()
-                    dist_diff = dist - coll_r
-                    if dist_diff < 0:
-                        dp = -dist_diff / dist * (self.p[vi] -
-                                                  self.coll_origin[0])
-                        self.p[vi] += dp
-
-        for i in range(self.vertex_num):
-            # print('p[',i,']:', p[i])
-            self.v[i] = (self.p[i] - self.x[i]) / self.dt
-            self.x[i] = self.p[i]
-
-    @ti.kernel
-    def substep_gpu(self):
-        for i in range(self.vertex_num):
-            self.v[i] += self.dt * ti.Vector([0, 0, -9.8]) * self.w[i]
-            self.v[i] *= ti.exp(-self.dt * self.drag_damping)
-            self.p[i] = self.x[i] + self.dt * self.v[i]
-
-        for n in ti.static(range(self.solver_num)):
-            if ti.static(self.enable_LRA):
-                for vi in range(self.vertex_num):
-                    for att in range(self.attach_num):
-                        if self.w[vi] > eps:
-                            dist = (self.p[vi] - self.attach_pos[att]).norm()
-                            dist_diff = dist - self.tether_len[vi, att]
-                            if dist_diff / self.tether_len[vi,
-                                                           att] > tether_give:
-                                dp = -0.5 * self.w[vi] * dist_diff * (
-                                    self.p[vi] - self.attach_pos[att]) / dist
-                                self.p[vi] += k_LRA * dp
-            #    if w[vi] > eps and dist - coll_r < 0:
-            # print(attach[0])
-
-            for l in range(self.link_num):
-                p0 = self.link[l][0]
-                p1 = self.link[l][1]
-                p_01 = self.p[p0] - self.p[p1]
-
-                kp = 1 - pow((1 - self.link_k[l]), 1 / (n + 1))
-
-                length = self.link_len[l]
-                if self.w[p0] > eps:
-                    dp0 = -0.5 * self.w[p0] * (p_01.norm() -
-                                               length) * p_01.normalized()
-                    self.p[self.link[l][0]] += kp * dp0
-
-                if self.w[p1] > eps:
-                    dp1 = 0.5 * self.w[p1] * (p_01.norm() -
-                                              length) * p_01.normalized()
-                    self.p[self.link[l][1]] += kp * dp1
-
-            for vi in range(self.vertex_num):
-                if self.w[vi] > eps:
-                    dist = (self.p[vi] - self.coll_origin[0]).norm()
-                    dist_diff = dist - coll_r
-                    if dist_diff < 0:
-                        dp = -dist_diff / dist * (self.p[vi] -
-                                                  self.coll_origin[0])
-                        self.p[vi] += dp
+        if ti.static(self.device == 'CPU'):
+            for n in range(self.solver_num):
+                self.project_constraints(n)
+        else:
+            for n in ti.static(range(self.solver_num)):
+                self.project_constraints(n)
 
         for i in range(self.vertex_num):
             # print('p[',i,']:', p[i])
@@ -253,8 +205,6 @@ class TiClothSimulation:
             self.x[i] = self.p[i]
 
     def animate(self):
-        substep = self.substep_cpu if self.device == 'CPU' else self.substep_gpu
-
         @nb.add_animation
         def main():
             for frame in range(self.frame_num):
@@ -268,4 +218,4 @@ class TiClothSimulation:
                     self.coll_origin[0].x = self.c_obj.location[0]
                     self.coll_origin[0].y = self.c_obj.location[1]
                     self.coll_origin[0].z = self.c_obj.location[2]
-                    substep()
+                    self.substep()
