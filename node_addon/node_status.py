@@ -1,4 +1,14 @@
 import bpy
+from .redrawViewport import Draw
+
+
+class SdfNodeProps(bpy.types.PropertyGroup):
+    def update_active_viewer(self, context):
+        Draw.refreshViewport(context.scene.sdf_node_data.active_viewer != '')
+
+    active_viewer: bpy.props.StringProperty(name="Active Viewer",
+                                            update=update_active_viewer)
+    active_collider: bpy.props.StringProperty(name="Active Collider")
 
 
 class Status(object):

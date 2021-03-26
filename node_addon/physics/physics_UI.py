@@ -2,7 +2,7 @@ import bpy
 import numblend as nb
 import taichi as ti
 
-from .PBD_stretch_bend_gpu import TiClothSimulation
+from .PBD_stretch_bend import TiClothSimulation
 
 cloth_simulations = []
 

@@ -481,7 +481,8 @@ class Draw(object):
             cls.glsl_nodes.update_glsl_func(update_node)
         else:
             cls.glsl_nodes.gen_node_list(
-                bpy.context.space_data.edit_tree.nodes["Viewer"])
+                bpy.context.space_data.edit_tree.nodes[
+                    bpy.context.scene.sdf_node_data.active_viewer])
         # print('GLSL:\n')
         # print(cls.glsl_nodes.glsl_func_text)
         # print(cls.glsl_nodes.glsl_sdf_text)
@@ -510,8 +511,8 @@ class Draw(object):
         return draw
 
     @classmethod
-    def refreshViewport(cls, enabled, update_node=False):
-        if enabled:
+    def refreshViewport(cls, enabled_show, update_node=False):
+        if enabled_show:
             if len(cls.handlers) == 0:
                 cls.handlers.append(
                     bpy.types.SpaceView3D.draw_handler_add(
@@ -536,6 +537,6 @@ class Draw(object):
             for node in nodetree.nodes:
                 if node.bl_idname == 'Viewer':
                     # print('has Viewer')
-                    if node.enabled and node.inputs[0].links:
+                    if node.enabled_show and node.inputs[0].links:
                         cls.refreshViewport(False, update_node)
                         cls.refreshViewport(True, update_node)

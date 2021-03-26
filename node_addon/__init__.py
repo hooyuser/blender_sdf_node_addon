@@ -16,7 +16,8 @@ import nodeitems_utils
 
 from . import auto_load
 from .redrawViewport import Draw
-from .physics.physics_status import SdfProps
+from .node_status import SdfNodeProps
+from .physics.physics_status import SdfPhyProps
 
 bl_info = {
     "name": "sdf node",
@@ -152,7 +153,8 @@ def register():
     auto_load.register()
     nodeitems_utils.register_node_categories("CUSTOM_NODES", node_categories)
 
-    bpy.types.Scene.sdf_physics = bpy.props.PointerProperty(type=SdfProps)
+    bpy.types.Scene.sdf_physics = bpy.props.PointerProperty(type=SdfPhyProps)
+    bpy.types.Scene.sdf_node_data = bpy.props.PointerProperty(type=SdfNodeProps)
 
 
 def unregister():

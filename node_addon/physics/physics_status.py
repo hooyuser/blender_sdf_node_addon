@@ -5,7 +5,7 @@ def scene_mychosenobject_poll(self, nodeTree):
     return nodeTree.bl_idname == 'SDFNodeTree'
 
 
-class SdfProps(bpy.types.PropertyGroup):
+class SdfPhyProps(bpy.types.PropertyGroup):
     cloth_obj: bpy.props.PointerProperty(name="Cloth",
                                          type=bpy.types.Object,
                                          description="Cloth Mesh")
