@@ -29,6 +29,7 @@ class TiClothSimulation:
         self.pin_group = self.obj.vertex_groups[sdf_phy.pin_group]
         self.pin_index = self.pin_group.index
         self.c_obj = sdf_phy.c_obj
+        self.c_sdf = sdf_phy.c_sdf
 
         self.bm = bmesh.new()  # create an empty BMesh
         self.bm.from_mesh(self.me)  # fill it in from a Mesh
