@@ -32,3 +32,17 @@ class SphereSDFNode(bpy.types.Node, CustomNode):
         return '', f'''
             float d_{me}_{self.ref_num}=f_{me}(p_{me}_{self.ref_num});
         '''
+
+    def gen_taichi_func(self):
+        me = self.index
+        return f'''
+@ti.kernel
+def f_{me}(p):
+    return (p-ti.Vector([x_{me},y_{me},z_{me}])).norm() - r_{me}
+'''
+
+    def gen_taichi(self, ref_stack):
+        me = self.index
+        return '', f'''
+    d_{me}_{self.ref_num}=f_{me}(p_{me}_{self.ref_num});
+'''

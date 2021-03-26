@@ -55,6 +55,9 @@ class NodeList(object):
         else:
             self.glsl_sdf_text = 'return 2 * MAX_DIST;'
 
+    def gen_collision_sdf(self):
+        pass
+
     def update_glsl_func(self, node):
         if self.node_list:
             self.glsl_func_list[node.index] = node.gen_glsl_func()
