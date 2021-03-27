@@ -11,6 +11,7 @@ class SphereSDFNode(bpy.types.Node, CustomNode):
 
     def init(self, context):
         self.index = -1
+        self.coll_index = -1  # index for collision system
 
         self.inputs.new('SdfNodeSocketPositiveFloat', "Radius")
         self.inputs[0].default_value = 1
@@ -34,15 +35,21 @@ class SphereSDFNode(bpy.types.Node, CustomNode):
         '''
 
     def gen_taichi_func(self):
-        me = self.index
+        me = self.coll_index
+        m = self.name
         return f'''
 @ti.kernel
 def f_{me}(p):
-    return (p-ti.Vector([x_{me},y_{me},z_{me}])).norm() - r_{me}
+    r = ti.static(bpy.context.scene.sdf_physics.c_sdf.nodes['{m}'].inputs[0].default_value)
+    x = ti.static(bpy.context.scene.sdf_physics.c_sdf.nodes['{m}'].inputs[1].default_value[0])
+    y = ti.static(bpy.context.scene.sdf_physics.c_sdf.nodes['{m}'].inputs[1].default_value[1])
+    z = ti.static(bpy.context.scene.sdf_physics.c_sdf.nodes['{m}'].inputs[1].default_value[2])
+    return (p-ti.Vector([x,y,z])).norm() - r
 '''
 
     def gen_taichi(self, ref_stack):
-        me = self.index
+        me = self.coll_index
+
         return '', f'''
-    d_{me}_{self.ref_num}=f_{me}(p_{me}_{self.ref_num});
+    d_{me}_{self.coll_ref_num} = f_{me}(p_{me}_{self.coll_ref_num})
 '''
