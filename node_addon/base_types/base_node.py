@@ -28,4 +28,4 @@ class CustomNode(object):
                         tree.links.new(self.outputs[0],
                                        to_node.inputs[-1]).is_valid = True
         Draw.update_callback()
-        self.last_update = self
+        # self.last_update = self

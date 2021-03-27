@@ -14,10 +14,14 @@
 import bpy
 import nodeitems_utils
 
+import os
+import atexit
+
 from . import auto_load
 from .redrawViewport import Draw
 from .node_status import SdfNodeProps
 from .physics.physics_status import SdfPhyProps
+from .physics.gen_sdf_code import temp
 
 bl_info = {
     "name": "sdf node",
@@ -154,7 +158,8 @@ def register():
     nodeitems_utils.register_node_categories("CUSTOM_NODES", node_categories)
 
     bpy.types.Scene.sdf_physics = bpy.props.PointerProperty(type=SdfPhyProps)
-    bpy.types.Scene.sdf_node_data = bpy.props.PointerProperty(type=SdfNodeProps)
+    bpy.types.Scene.sdf_node_data = bpy.props.PointerProperty(
+        type=SdfNodeProps)
 
 
 def unregister():
@@ -164,7 +169,20 @@ def unregister():
     nodeitems_utils.unregister_node_categories("CUSTOM_NODES")
 
     del bpy.types.Scene.sdf_physics
+    try:
+        os.remove(temp.name)
+    except FileNotFoundError:
+        print(temp.name + ' not found!')
 
+
+def cleanup_temp():
+    try:
+        os.remove(temp.name)
+    except FileNotFoundError:
+        print(temp.name + ' not found!')
+
+
+atexit.register(cleanup_temp)
 
 if __name__ == '__main__':
     register()
