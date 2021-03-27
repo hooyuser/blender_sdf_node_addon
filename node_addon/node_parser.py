@@ -55,7 +55,7 @@ class NodeList(object):
             if node.coll_index > -2:
                 node.coll_index = -1
                 node.coll_ref_num = 0
-        self.followLinks(node_in, self.gen_taichi_list)
+        self.collision_follow_links(node_in, self.gen_taichi_list)
 
     def gen_node_list(self, node_in):
         self.reset_display_nodes()
@@ -101,7 +101,8 @@ class NodeList(object):
             # inspect.cleandoc(self.glsl_sdf_text)
 
         else:
-            self.taichi_sdf_text = 'return 1e19'
+            self.taichi_sdf_text = '''
+    return 1e19'''
 
     def update_glsl_func(self, node):
         if self.node_list:
@@ -127,6 +128,27 @@ class NodeList(object):
                         else:
                             node.ref_num += 1
                             self.ref_stacks[node.index].append(node.ref_num)
+
+                        # print(node.name, ':', node.index, node.ref_num)
+                        operation(node)
+    
+    def collision_follow_links(self, node_in, operation):
+        for n_inputs in node_in.inputs:
+            for node_link in n_inputs.links:
+                to_name = node_link.to_socket.bl_idname
+                if node_link.from_socket.bl_idname == to_name:
+                    # for all input nodes
+                    node = node_link.from_node
+                    if node.coll_index > -2:
+                        self.collision_follow_links(node, operation)
+
+                        if node.coll_index < 0:
+                            node.coll_index = len(self.coll_node_list)
+                            self.coll_node_list.append(node)
+                            self.coll_ref_stacks.append([0])
+                        else:
+                            node.coll_ref_num += 1
+                            self.coll_ref_stacks[node.coll_index].append(node.coll_ref_num)
 
                         # print(node.name, ':', node.index, node.ref_num)
                         operation(node)

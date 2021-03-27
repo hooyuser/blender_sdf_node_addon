@@ -38,7 +38,7 @@ class SphereSDFNode(bpy.types.Node, CustomNode):
         me = self.coll_index
         m = self.name
         return f'''
-@ti.kernel
+@ti.func
 def f_{me}(p):
     r = ti.static(bpy.context.scene.sdf_physics.c_sdf.nodes['{m}'].inputs[0].default_value)
     x = ti.static(bpy.context.scene.sdf_physics.c_sdf.nodes['{m}'].inputs[1].default_value[0])

@@ -1,5 +1,6 @@
 import bpy
 from ..redrawViewport import Draw
+from ..physics.gen_sdf_code import gen_sdf_taichi
 
 
 class CustomNode(object):
@@ -28,4 +29,6 @@ class CustomNode(object):
                         tree.links.new(self.outputs[0],
                                        to_node.inputs[-1]).is_valid = True
         Draw.update_callback()
+        gen_sdf_taichi()
+
         # self.last_update = self
