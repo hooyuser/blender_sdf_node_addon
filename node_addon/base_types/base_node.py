@@ -1,6 +1,6 @@
 import bpy
 from ..redrawViewport import Draw
-from ..physics.gen_sdf_code import gen_sdf_taichi
+from ..physics.PBD_stretch_bend import gen_sdf_taichi
 
 
 class CustomNode(object):

@@ -3,8 +3,17 @@ import taichi as ti
 import numblend as nb
 from math import sqrt
 
+import bpy
+import importlib
+import tempfile
+
+from sys import path
+import pathlib
+
+from ..node_parser import NodeList
+
 nb.init()
-ti.init(arch=ti.cpu, debug=False)
+ti.init(arch=ti.cpu, debug=True)
 
 coll_r = 1.01
 k_stretch = 0.9
@@ -12,6 +21,50 @@ k_bend = 0.7
 k_LRA = 0.5
 tether_give = 0.2
 eps = 1e-3
+
+##########################################################################
+coll_node_list = NodeList()
+
+sdf_func_ins_1 = '''
+import bpy
+import taichi as ti
+'''
+
+sdf_func_ins_2 = '''
+@ti.func
+def ti_sdf(p):'''
+
+temp = tempfile.NamedTemporaryFile(suffix='.py', delete=False)
+temp.close()
+temp_path = pathlib.Path(temp.name)
+path.append(str(temp_path.parent))
+sdf_mod = importlib.import_module(temp_path.stem)
+
+
+def gen_sdf_taichi():
+    collision_tree = bpy.context.scene.sdf_physics.c_sdf
+    if collision_tree:
+        coll_node = bpy.context.scene.sdf_node_data.active_collider
+        if coll_node:
+            coll_node_list.gen_collision_node_list(
+                collision_tree.nodes[coll_node])
+            taichi_sdf_codes = sdf_func_ins_1 + coll_node_list.taichi_func_text + \
+                sdf_func_ins_2 + coll_node_list.taichi_sdf_text
+            print('**taichi_sdf_codes:\n' + taichi_sdf_codes)
+            with open(temp.name, "w") as f:
+                f.write(taichi_sdf_codes)
+            importlib.reload(sdf_mod)
+
+
+#####################################################################################
+@ti.func
+def sdf_grad(p):
+    h = 0.0001  # replace by an appropriate value
+    return (sdf_mod.ti_sdf(p + h * ti.Vector([1, -1, -1])) * ti.Vector([1, -1, -1]) +
+            sdf_mod.ti_sdf(p + h * ti.Vector([-1, -1, 1])) * ti.Vector([-1, -1, 1]) +
+            sdf_mod.ti_sdf(p + h * ti.Vector([-1, 1, -1])) * ti.Vector([-1, 1, -1]) +
+            sdf_mod.ti_sdf(p + h * ti.Vector([1, 1, 1])) *
+            ti.Vector([1, 1, 1])).normalized()
 
 
 @ti.data_oriented
@@ -181,8 +234,9 @@ class TiClothSimulation:
         for vi in range(self.vertex_num):
             if self.w[vi] > eps:
                 dist = (self.p[vi] - self.coll_origin[0]).norm()
-                dist_diff = dist - coll_r
-                if dist_diff < 0:
+                # dist_diff = dist - coll_r
+                dist_diff = sdf_mod.ti_sdf(self.p[vi])
+                if dist_diff < 0.01:
                     dp = -dist_diff / dist * (self.p[vi] - self.coll_origin[0])
                     self.p[vi] += dp
 

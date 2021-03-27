@@ -21,7 +21,7 @@ from . import auto_load
 from .redrawViewport import Draw
 from .node_status import SdfNodeProps
 from .physics.physics_status import SdfPhyProps
-from .physics.gen_sdf_code import temp
+from .physics.PBD_stretch_bend import temp
 
 bl_info = {
     "name": "sdf node",
