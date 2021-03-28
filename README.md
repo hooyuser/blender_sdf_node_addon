@@ -36,5 +36,6 @@ Since this addon is still work-in-progress and has no official releases, you can
   - [x] Support math operations
   - [ ] Support creating node groups
 * Other Functions
-  - [ ] Convert mesh to SDF
-  - [ ] Generate mesh from SDF
+  - [ ] Convert mesh to VDB SDF
+  - [ ] Generate mesh from analytical SDF
+  - [ ] Generate mesh from VDB SDF
