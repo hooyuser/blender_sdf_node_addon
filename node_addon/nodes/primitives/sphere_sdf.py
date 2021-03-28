@@ -8,6 +8,7 @@ class SphereSDFNode(bpy.types.Node, CustomNode):
     bl_idname = 'SphereSDF'
     bl_label = 'Sphere SDF'
     bl_icon = 'SPHERE'
+    para_num = 4
 
     def init(self, context):
         self.index = -1
@@ -19,6 +20,12 @@ class SphereSDFNode(bpy.types.Node, CustomNode):
         self.inputs.new('SdfNodeSocketVectorTranslation', "Location")
 
         self.outputs.new('NodeSocketFloat', "SDF")
+
+    def get_para(self, idx):
+        return [
+            self.inputs[0].default_value, self.inputs[1].default_value[0],
+            self.inputs[1].default_value[1], self.inputs[1].default_value[2]
+        ][idx]
 
     def gen_glsl_func(self):
         loc = self.inputs[1].default_value
@@ -40,11 +47,7 @@ class SphereSDFNode(bpy.types.Node, CustomNode):
         return f'''
 @ti.func
 def f_{me}(p):
-    r = ti.static(bpy.context.scene.sdf_physics.c_sdf.nodes['{m}'].inputs[0].default_value)
-    x = ti.static(bpy.context.scene.sdf_physics.c_sdf.nodes['{m}'].inputs[1].default_value[0])
-    y = ti.static(bpy.context.scene.sdf_physics.c_sdf.nodes['{m}'].inputs[1].default_value[1])
-    z = ti.static(bpy.context.scene.sdf_physics.c_sdf.nodes['{m}'].inputs[1].default_value[2])
-    return (p-ti.Vector([x,y,z])).norm() - r
+    return (p-ti.Vector([para[{self.coll_para_idx + 1}], para[{self.coll_para_idx + 2}], para[{self.coll_para_idx + 3}]])).norm() - para[{self.coll_para_idx}]
 '''
 
     def gen_taichi(self, ref_stack):

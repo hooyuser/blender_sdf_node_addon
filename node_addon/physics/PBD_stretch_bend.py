@@ -1,6 +1,7 @@
 import bmesh
 import taichi as ti
 import numblend as nb
+import numpy as np
 from math import sqrt
 
 import bpy
@@ -22,17 +23,9 @@ k_LRA = 0.5
 tether_give = 0.2
 eps = 1e-3
 
-##########################################################################
-coll_node_list = NodeList()
-
-sdf_func_ins_1 = '''
-import bpy
-import taichi as ti
-'''
-
-sdf_func_ins_2 = '''
-@ti.func
-def ti_sdf(p):'''
+###############################################################################
+coll_nodes = NodeList()
+np_para = None
 
 temp = tempfile.NamedTemporaryFile(suffix='.py', delete=False)
 temp.close()
@@ -42,29 +35,44 @@ sdf_mod = importlib.import_module(temp_path.stem)
 
 
 def gen_sdf_taichi():
-    collision_tree = bpy.context.scene.sdf_physics.c_sdf
+    global np_para
+    sdf_phy = bpy.context.scene.sdf_physics
+    collision_tree = sdf_phy.c_sdf
     if collision_tree:
         coll_node = bpy.context.scene.sdf_node_data.active_collider
         if coll_node:
-            coll_node_list.gen_collision_node_list(
+            coll_nodes.gen_collision_node_list(
                 collision_tree.nodes[coll_node])
-            taichi_sdf_codes = sdf_func_ins_1 + coll_node_list.taichi_func_text + \
-                sdf_func_ins_2 + coll_node_list.taichi_sdf_text
+
+            # para refers to animated parameters
+            taichi_sdf_codes = f'''
+import bpy
+import taichi as ti
+
+para = ti.field(dtype=ti.f32, shape={sdf_phy.ani_para_num})
+''' + coll_nodes.taichi_func_text + '''
+@ti.func
+def ti_sdf(p):
+''' + coll_nodes.taichi_sdf_text
+
             print('**taichi_sdf_codes:\n' + taichi_sdf_codes)
             with open(temp.name, "w") as f:
                 f.write(taichi_sdf_codes)
             importlib.reload(sdf_mod)
+            np_para = np.zeros((sdf_phy.ani_para_num))
 
 
-#####################################################################################
+###############################################################################
 @ti.func
 def sdf_grad(p):
-    h = 0.0001  # replace by an appropriate value
-    return (sdf_mod.ti_sdf(p + h * ti.Vector([1, -1, -1])) * ti.Vector([1, -1, -1]) +
-            sdf_mod.ti_sdf(p + h * ti.Vector([-1, -1, 1])) * ti.Vector([-1, -1, 1]) +
-            sdf_mod.ti_sdf(p + h * ti.Vector([-1, 1, -1])) * ti.Vector([-1, 1, -1]) +
-            sdf_mod.ti_sdf(p + h * ti.Vector([1, 1, 1])) *
-            ti.Vector([1, 1, 1])).normalized()
+    h = 1e-4  # replace by an appropriate value
+    return (
+        sdf_mod.ti_sdf(p + h * ti.Vector([1, -1, -1])) * ti.Vector([1, -1, -1])
+        + sdf_mod.ti_sdf(p + h * ti.Vector([-1, -1, 1])) *
+        ti.Vector([-1, -1, 1]) +
+        sdf_mod.ti_sdf(p + h * ti.Vector([-1, 1, -1])) * ti.Vector([-1, 1, -1])
+        + sdf_mod.ti_sdf(p + h * ti.Vector([1, 1, 1])) *
+        ti.Vector([1, 1, 1])).normalized()
 
 
 @ti.data_oriented
@@ -235,9 +243,11 @@ class TiClothSimulation:
             if self.w[vi] > eps:
                 dist = (self.p[vi] - self.coll_origin[0]).norm()
                 # dist_diff = dist - coll_r
-                dist_diff = sdf_mod.ti_sdf(self.p[vi])
-                if dist_diff < 0.01:
-                    dp = -dist_diff / dist * (self.p[vi] - self.coll_origin[0])
+                sdf = sdf_mod.ti_sdf(self.p[vi])
+                if sdf < 0.01:
+                    # dp = -dist_diff / dist * (self.p[vi] - self.coll_origin[0])
+                    sdf_g = sdf_grad(self.p[vi])
+                    dp = -sdf / sdf_g.norm_sqr() * sdf_g
                     self.p[vi] += dp
 
     @ti.kernel
@@ -251,8 +261,9 @@ class TiClothSimulation:
             for n in range(self.solver_num):
                 self.project_constraints(n)
         else:
-            for n in ti.static(range(self.solver_num)):
-                self.project_constraints(n)
+            for _ in range(1):
+                for n in range(self.solver_num):
+                    self.project_constraints(n)
 
         for i in range(self.vertex_num):
             # print('p[',i,']:', p[i])
@@ -262,6 +273,7 @@ class TiClothSimulation:
     def animate(self):
         @nb.add_animation
         def main():
+            global np_para
             for frame in range(self.frame_num):
                 yield nb.mesh_update(
                     self.me,
@@ -270,7 +282,12 @@ class TiClothSimulation:
                 for step in range(self.substep_num):
                     # print('frame:',frame,', substep:',s)
                     # s += 1
-                    self.coll_origin[0].x = self.c_obj.location[0]
-                    self.coll_origin[0].y = self.c_obj.location[1]
-                    self.coll_origin[0].z = self.c_obj.location[2]
+                    # self.coll_origin[0].x = self.c_obj.location[0]
+                    # self.coll_origin[0].y = self.c_obj.location[1]
+                    # self.coll_origin[0].z = self.c_obj.location[2]
+                    for node in coll_nodes.coll_node_list:
+                        start_idx = node.coll_para_idx
+                        for i in range(node.para_num):
+                            np_para[start_idx + i] = node.get_para(i)
+                    sdf_mod.para.from_numpy(np_para)
                     self.substep()

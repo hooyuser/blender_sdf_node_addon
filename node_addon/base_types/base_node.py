@@ -14,6 +14,9 @@ class CustomNode(object):
     bpy.types.Node.coll_ref_num = bpy.props.IntProperty()
     # ref_num actually equals the referencing number - 1
 
+    bpy.types.Node.coll_para_idx = bpy.props.IntProperty()
+    # the index of the first parameter of a node
+
     @classmethod
     def poll(cls, ntree):
         return ntree.bl_idname == 'SDFNodeTree'

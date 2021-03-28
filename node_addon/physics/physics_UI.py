@@ -3,6 +3,7 @@ import numblend as nb
 import taichi as ti
 
 from .PBD_stretch_bend import TiClothSimulation
+from .PBD_stretch_bend import gen_sdf_taichi
 
 cloth_simulations = []
 
@@ -20,6 +21,7 @@ class ProcessingGeometryOperator(bpy.types.Operator):
         scene = context.scene
         ti_device = ti.gpu if scene.sdf_physics.device == 'GPU' else ti.cpu
         ti.init(arch=ti_device, debug=False)
+        gen_sdf_taichi()
         cloth_simulations.clear()
         cloth_simulations.append(
             TiClothSimulation(scene.sdf_physics, scene.frame_end))
@@ -82,14 +84,17 @@ class ClothPhysicsPanel(bpy.types.Panel):
                                 "vertex_groups",
                                 text="Attach")
 
-        row = layout.row()
-        row.prop(sdf_phy, "c_obj")
+        # row = layout.row()
+        # row.prop(sdf_phy, "c_obj")
 
         row = layout.row()
         row.prop(sdf_phy, "c_sdf")
 
         row = layout.row()
         row.prop(sdf_phy, "device")
+
+        row = layout.row()
+        row.prop(sdf_phy, "ani_para_num")
 
         if sdf_phy.cloth_obj:
             row = layout.row()
@@ -114,6 +119,6 @@ class ClothPhysicsPanel(bpy.types.Panel):
         row = layout.row()
         row.prop(sdf_phy, "drag_damping")
 
-        if sdf_phy.cloth_obj and sdf_phy.c_obj:
+        if sdf_phy.cloth_obj and sdf_phy.c_sdf:
             row = layout.row()
             row.operator("object.simulate_operator", text="Simulate")

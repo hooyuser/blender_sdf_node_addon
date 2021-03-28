@@ -37,6 +37,7 @@ class ObjectInfoNode(bpy.types.Node, CustomNode):
 
     def init(self, context):
         self.index = -3
+        self.coll_index = -3
         self.outputs.new(type='SdfNodeSocketVectorTranslation',
                          name="Location")
 

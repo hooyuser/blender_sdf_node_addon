@@ -88,8 +88,12 @@ class NodeList(object):
             coll_num = len(self.coll_node_list) - 1
             coll_ref_n = self.coll_node_list[coll_num].coll_ref_num
 
+            para_idx = 0
             for node in self.coll_node_list:
                 self.taichi_func_list.append(node.gen_taichi_func())
+                node.coll_para_idx = para_idx
+                para_idx += node.para_num
+
             self.taichi_p_list.reverse()
 
             self.taichi_sdf_text = f'''
@@ -103,6 +107,8 @@ class NodeList(object):
         else:
             self.taichi_sdf_text = '''
     return 1e19'''
+
+        
 
     def update_glsl_func(self, node):
         if self.node_list:

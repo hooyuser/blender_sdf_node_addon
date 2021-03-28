@@ -2,7 +2,13 @@ import bpy
 
 from ..redrawViewport import Draw
 
-# class BaseNodeSocket(object):
+
+class BaseNodeSocket(object):
+    def default_value_callback(self, context):
+        Draw.update_callback(update_node=self.node)
+        
+
+
 #     socket_types = [("FLOAT", "Float", "Where your feet are"),
 #                     ("INT", "Int", "Where your head should be"),
 #                     ("SDF", "SDF", "Not right"),
@@ -45,15 +51,12 @@ class CustomNodeSocket(bpy.types.NodeSocket):
         return (1, 1, 1, 1)
 
 
-class SdfNodeSocketPositiveInt(bpy.types.NodeSocket):
+class SdfNodeSocketPositiveInt(bpy.types.NodeSocket, BaseNodeSocket):
     bl_idname = "SdfNodeSocketPositiveInt"
     bl_label = "SDF Node Socket Positive Int"
 
-    def default_value_callback(self, context):
-        Draw.update_callback(update_node=self.node)
-
-    default_value: bpy.props.IntProperty(soft_min=0,
-                                         update=default_value_callback)
+    default_value: bpy.props.IntProperty(
+        soft_min=0, update=BaseNodeSocket.default_value_callback)
 
     # Optional function for drawing the socket input value
     def draw(self, context, layout, node, text):
@@ -66,14 +69,12 @@ class SdfNodeSocketPositiveInt(bpy.types.NodeSocket):
         return (0.7, 0.55, 0.2, 1)
 
 
-class SdfNodeSocketFloat(bpy.types.NodeSocket):
+class SdfNodeSocketFloat(bpy.types.NodeSocket, BaseNodeSocket):
     bl_idname = "SdfNodeSocketFloat"
     bl_label = "SDF Node Socket Float"
 
-    def default_value_callback(self, context):
-        Draw.update_callback(update_node=self.node)
-
-    default_value: bpy.props.FloatProperty(update=default_value_callback)
+    default_value: bpy.props.FloatProperty(
+        update=BaseNodeSocket.default_value_callback)
     my_type: bpy.props.StringProperty(name='mySocketType', default='FLOAT')
 
     # Optional function for drawing the socket input value
@@ -88,15 +89,12 @@ class SdfNodeSocketFloat(bpy.types.NodeSocket):
         return (0.4, 0.5, 0.6, 1)
 
 
-class SdfNodeSocketPositiveFloat(bpy.types.NodeSocket):
+class SdfNodeSocketPositiveFloat(bpy.types.NodeSocket, BaseNodeSocket):
     bl_idname = "SdfNodeSocketPositiveFloat"
     bl_label = "SDF Node Socket Positive Float"
 
-    def default_value_callback(self, context):
-        Draw.update_callback(update_node=self.node)
-
-    default_value: bpy.props.FloatProperty(soft_min=0.0,
-                                           update=default_value_callback)
+    default_value: bpy.props.FloatProperty(
+        soft_min=0.0, update=BaseNodeSocket.default_value_callback)
 
     # Optional function for drawing the socket input value
     def draw(self, context, layout, node, text):
@@ -109,15 +107,13 @@ class SdfNodeSocketPositiveFloat(bpy.types.NodeSocket):
         return (0.643, 0.788, 0.824, 1)
 
 
-class SdfNodeSocketFloatVector(bpy.types.NodeSocket):
+class SdfNodeSocketFloatVector(bpy.types.NodeSocket, BaseNodeSocket):
 
     bl_idname = "SdfNodeSocketFloatVector"
     bl_label = "SDF Node Socket Float Vector"
 
-    def default_value_callback(self, context):
-        Draw.update_callback(update_node=self.node)
-
-    default_value: bpy.props.FloatVectorProperty(update=default_value_callback)
+    default_value: bpy.props.FloatVectorProperty(
+        update=BaseNodeSocket.default_value_callback)
 
     # Optional function for drawing the socket input value
     def draw(self, context, layout, node, text):
@@ -131,16 +127,13 @@ class SdfNodeSocketFloatVector(bpy.types.NodeSocket):
         return (0.3, 0.4, 0.7, 1)
 
 
-class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket):
+class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket, BaseNodeSocket):
 
     bl_idname = "SdfNodeSocketVectorTranslation"
     bl_label = "SDF Node Socket Vector Translation"
 
-    def default_value_callback(self, context):
-        Draw.update_callback(update_node=self.node)
-
-    default_value = bpy.props.FloatVectorProperty(
-        subtype='TRANSLATION', update=default_value_callback)
+    default_value: bpy.props.FloatVectorProperty(
+        subtype='TRANSLATION', update=BaseNodeSocket.default_value_callback)
 
     # Optional function for drawing the socket input value
     def draw(self, context, layout, node, text):
@@ -154,16 +147,15 @@ class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket):
         return (0.4, 0.4, 0.8, 1)
 
 
-class SdfNodeSocketEuler(bpy.types.NodeSocket):
+class SdfNodeSocketEuler(bpy.types.NodeSocket, BaseNodeSocket):
 
     bl_idname = "SdfNodeSocketEuler"
     bl_label = "SDF Node Socket Euler"
 
-    def default_value_callback(self, context):
-        Draw.update_callback(update_node=self.node)
-
-    default_value = bpy.props.FloatVectorProperty(
-        default=[0, 0, 0], update=default_value_callback, subtype="EULER")
+    default_value: bpy.props.FloatVectorProperty(
+        default=[0, 0, 0],
+        update=BaseNodeSocket.default_value_callback,
+        subtype="EULER")
 
     # Optional function for drawing the socket input value
     def draw(self, context, layout, node, text):
@@ -188,15 +180,12 @@ class SdfNodeSocketSd(bpy.types.NodeSocket):
         return (0.5, 0.5, 0.5, 1)
 
 
-class SdfNodeSocketOperation(bpy.types.NodeSocket):
+class SdfNodeSocketOperation(bpy.types.NodeSocket, BaseNodeSocket):
     bl_idname = "SdfNodeSocketOperation"
     bl_label = "SDF Node Socket Operation"
 
-    def default_value_callback(self, context):
-        Draw.update_callback(update_node=self.node)
-
-    default_value = bpy.props.FloatVectorProperty(
-        update=default_value_callback)
+    default_value: bpy.props.FloatVectorProperty(
+        update=BaseNodeSocket.default_value_callback)
 
     def draw(self, context, layout, node, text):
         layout.label(text='Operation')

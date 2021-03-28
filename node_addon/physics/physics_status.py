@@ -26,6 +26,12 @@ class SdfPhyProps(bpy.types.PropertyGroup):
                                    items=[('GPU', 'GPU', 'GPU'),
                                           ('CPU', 'CPU', 'CPU')],
                                    default="CPU")
+    ani_para_num: bpy.props.IntProperty(
+        name="Parameters",
+        description="The number of animated parameters",
+        default=50,
+        min=1,
+        max=1000)
     substep_num: bpy.props.IntProperty(name="Substeps",
                                        description="Substeps Per Frame",
                                        default=10,
