@@ -3,7 +3,7 @@ This addon provides **SDF Node System** for **SDF Rendering** and physics simula
 
 SDF refers to signed distance field. You may find lots of impressive content to do with SDF on this website https://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm.
 
-For now this addon is still work-in-progress and has no official releases. You can just go for it by manual installation. That is, copy the `sdf_node_addon` directory to your blender's `scripts/addons` directory directly.
+Since this addon is still work-in-progress and has no official releases, you can only go for it by manual installation. For now you have to install another blender addon [taichi-blend](https://github.com/taichi-dev/taichi_blend) firstly. Then just copy the `sdf_node_addon` directory to your blender's `scripts/addons` directory directly.
 
 
 ## Features
