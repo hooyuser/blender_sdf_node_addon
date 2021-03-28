@@ -21,9 +21,9 @@ Since this addon is still work-in-progress and has no official releases, you can
 
 ## To-Do List
 * Preview and Rendering
-  - [ ] Volume rendering
-  - [ ] Matcap shading
-  - [ ] Image-based lighting
+  - [ ] More shaders, such as volume shader, Matcap shader
+  - [ ] Image-based lighting and more complete light system
+  - [ ] Support assign materials for specific area of SDF geometry
   - [x] Image Output
 * Physics Simulation
   - [ ] SDF collision with simple prmitives and analytical gradient
