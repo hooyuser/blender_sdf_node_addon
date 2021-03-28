@@ -10,7 +10,7 @@ Since this addon is still work-in-progress and has no official releases, you can
 - SDF Rendering
   - Node system which allows real-time viewport update
   - Support combination of primitives, including *Union*, *Subtraction*, *Intersection*, *Blend shape*
-  -Support most of the SDF operations listed in 
+  - Support a lot of SDF operations, including *Transform*, *Twist*, *Round*, *Solidify*, *Elongate*, *Mirror*, etc.
   - FBM noise displacement
   - Basic PBR rendering
 - CPU/GPU Physics Simulation
