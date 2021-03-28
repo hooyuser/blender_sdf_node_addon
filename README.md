@@ -23,7 +23,7 @@ Since this addon is still work-in-progress and has no official releases, you can
 * Preview and Rendering
   - [ ] More shaders, such as volume shader, Matcap shader
   - [ ] Image-based lighting and more complete light system
-  - [ ] Support material assignment for each part of a contructive SDF
+  - [ ] Material assignment for each part of a contructive SDF
   - [x] Image Output
 * Physics Simulation
   - [ ] SDF collision with simple prmitives and analytical gradient
