@@ -15,9 +15,9 @@ class SdfPhyProps(bpy.types.PropertyGroup):
         description="Long Range Attachments Constraints",
         default=False)
     attach_group: bpy.props.StringProperty(name="Attachments Vertex Group")
-    c_obj: bpy.props.PointerProperty(name="Collision",
-                                     type=bpy.types.Object,
-                                     description="Collision Mesh")
+    # c_obj: bpy.props.PointerProperty(name="Collision",
+    #                                  type=bpy.types.Object,
+    #                                  description="Collision Mesh")
     c_sdf: bpy.props.PointerProperty(name="SDF",
                                      type=bpy.types.NodeTree,
                                      description="Collision SDF",
@@ -53,3 +53,8 @@ class SdfPhyProps(bpy.types.PropertyGroup):
                                           default=1.0,
                                           min=0,
                                           max=10000)
+
+    # sdf_para_changed: bpy.props.BoolProperty(
+    #     name="SDF_para_changed",
+    #     description="SDF parameters changed",
+    #     default=True)

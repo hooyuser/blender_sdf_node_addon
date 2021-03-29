@@ -14,7 +14,7 @@ import pathlib
 from ..node_parser import NodeList
 
 nb.init()
-ti.init(arch=ti.cpu, debug=True)
+ti.init(arch=ti.cpu, debug=True, default_fp=ti.f32)
 
 coll_r = 1.01
 k_stretch = 0.9
@@ -22,6 +22,8 @@ k_bend = 0.7
 k_LRA = 0.5
 tether_give = 0.2
 eps = 1e-3
+
+
 
 ###############################################################################
 coll_nodes = NodeList()
@@ -41,8 +43,7 @@ def gen_sdf_taichi():
     if collision_tree:
         coll_node = bpy.context.scene.sdf_node_data.active_collider
         if coll_node:
-            coll_nodes.gen_collision_node_list(
-                collision_tree.nodes[coll_node])
+            coll_nodes.gen_collision_node_list(collision_tree.nodes[coll_node])
 
             # para refers to animated parameters
             taichi_sdf_codes = f'''
@@ -59,24 +60,25 @@ def ti_sdf(p):
             with open(temp.name, "w") as f:
                 f.write(taichi_sdf_codes)
             importlib.reload(sdf_mod)
-            np_para = np.zeros((sdf_phy.ani_para_num))
+            np_para = np.zeros((sdf_phy.ani_para_num), dtype=np.float64)
 
 
 ###############################################################################
 @ti.func
 def sdf_grad(p):
-    h = 1e-4  # replace by an appropriate value
+    h = 1e-3  # replace by an appropriate value
     return (
         sdf_mod.ti_sdf(p + h * ti.Vector([1, -1, -1])) * ti.Vector([1, -1, -1])
-        + sdf_mod.ti_sdf(p + h * ti.Vector([-1, -1, 1])) *
-        ti.Vector([-1, -1, 1]) +
-        sdf_mod.ti_sdf(p + h * ti.Vector([-1, 1, -1])) * ti.Vector([-1, 1, -1])
-        + sdf_mod.ti_sdf(p + h * ti.Vector([1, 1, 1])) *
-        ti.Vector([1, 1, 1])).normalized()
+        + sdf_mod.ti_sdf(p + h * ti.Vector([-1, -1, 1])) * ti.Vector(
+            [-1, -1, 1]) + sdf_mod.ti_sdf(p + h * ti.Vector([-1, 1, -1])) *
+        ti.Vector([-1, 1, -1]) + sdf_mod.ti_sdf(p + h * ti.Vector([1, 1, 1])) *
+        ti.Vector([1, 1, 1])) / h / 4.0
 
 
 @ti.data_oriented
 class TiClothSimulation:
+    sdf_para_changed = True
+
     def __init__(self, sdf_phy, frame_end):
         self.dt = sdf_phy.time_step / 1000.0
         self.device = sdf_phy.device
@@ -89,7 +91,6 @@ class TiClothSimulation:
         self.me = self.obj.data
         self.pin_group = self.obj.vertex_groups[sdf_phy.pin_group]
         self.pin_index = self.pin_group.index
-        self.c_obj = sdf_phy.c_obj
         self.c_sdf = sdf_phy.c_sdf
 
         self.bm = bmesh.new()  # create an empty BMesh
@@ -98,6 +99,8 @@ class TiClothSimulation:
         self.edge_num = len(self.bm.edges)
         self.face_num = len(self.bm.faces)
         self.link_num = self.edge_num + self.face_num * 2
+
+        
 
         # vertex position
         self.x = ti.Vector.field(3, dtype=ti.f32, shape=self.vertex_num)
@@ -274,6 +277,7 @@ class TiClothSimulation:
         @nb.add_animation
         def main():
             global np_para
+            
             for frame in range(self.frame_num):
                 yield nb.mesh_update(
                     self.me,
@@ -285,9 +289,11 @@ class TiClothSimulation:
                     # self.coll_origin[0].x = self.c_obj.location[0]
                     # self.coll_origin[0].y = self.c_obj.location[1]
                     # self.coll_origin[0].z = self.c_obj.location[2]
-                    for node in coll_nodes.coll_node_list:
-                        start_idx = node.coll_para_idx
-                        for i in range(node.para_num):
-                            np_para[start_idx + i] = node.get_para(i)
-                    sdf_mod.para.from_numpy(np_para)
+                    if self.sdf_para_changed:
+                        for node in coll_nodes.coll_node_list:
+                            start_idx = node.coll_para_idx
+                            for i in range(node.para_num):
+                                np_para[start_idx + i] = node.get_para(i)
+                        sdf_mod.para.from_numpy(np_para)
+                        self.sdf_para_changed = False
                     self.substep()

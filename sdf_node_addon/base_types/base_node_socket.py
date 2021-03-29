@@ -1,12 +1,13 @@
 import bpy
 
 from ..redrawViewport import Draw
+from ..physics.PBD_stretch_bend import TiClothSimulation
 
 
 class BaseNodeSocket(object):
     def default_value_callback(self, context):
         Draw.update_callback(update_node=self.node)
-        
+        TiClothSimulation.sdf_para_changed = True
 
 
 #     socket_types = [("FLOAT", "Float", "Where your feet are"),
