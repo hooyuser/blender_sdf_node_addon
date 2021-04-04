@@ -17,6 +17,8 @@ import nodeitems_utils
 import os
 import atexit
 
+import taichi as ti
+
 from . import auto_load
 from .redrawViewport import Draw
 from .node_status import SdfNodeProps
@@ -163,6 +165,9 @@ def register():
 
 
 def unregister():
+
+    ti.kernel_profiler_print()
+
     Draw.refreshViewport(False)
 
     auto_load.unregister()

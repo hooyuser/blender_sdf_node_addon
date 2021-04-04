@@ -14,7 +14,7 @@ import pathlib
 from ..node_parser import NodeList
 
 nb.init()
-ti.init(arch=ti.cpu, debug=True, default_fp=ti.f32)
+ti.init(arch=ti.cpu, debug=True, default_fp=ti.f32, kernel_profiler=True)
 
 coll_r = 1.01
 k_stretch = 0.9
@@ -23,7 +23,7 @@ k_LRA = 0.5
 tether_give = 0.2
 eps = 1e-3
 
-
+coll_eps = 0.01
 
 ###############################################################################
 coll_nodes = NodeList()
@@ -100,13 +100,14 @@ class TiClothSimulation:
         self.face_num = len(self.bm.faces)
         self.link_num = self.edge_num + self.face_num * 2
 
-        
-
         # vertex position
         self.x = ti.Vector.field(3, dtype=ti.f32, shape=self.vertex_num)
 
         # predicted vertex position
-        self.p = ti.Vector.field(3, dtype=ti.f32, shape=self.vertex_num)
+        self.p = ti.Vector.field(3,
+                                 dtype=ti.f32,
+                                 shape=self.vertex_num,
+                                 needs_grad=True)
 
         # vertex position
         self.v = ti.Vector.field(3, dtype=ti.f32, shape=self.vertex_num)
@@ -122,6 +123,11 @@ class TiClothSimulation:
         self.link_k = ti.field(dtype=ti.f32, shape=self.link_num)
         self.link_idx = ti.field(dtype=ti.i32, shape=())
         self.coll_origin = ti.Vector.field(3, dtype=ti.f32, shape=1)
+
+        self.sdf = ti.field(dtype=ti.f32,
+                            shape=self.vertex_num,
+                            needs_grad=True)
+        self.sdf_sum = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 
         # Long Range Attachments
         if self.enable_LRA:
@@ -209,8 +215,8 @@ class TiClothSimulation:
         self.set_edges()
         self.set_faces()
 
-    @ti.func
-    def project_constraints(self, n):
+    @ti.kernel
+    def project_constraints(self, n: ti.i32):
         if ti.static(self.enable_LRA):
             for vi in range(self.vertex_num):
                 for att in range(self.attach_num):
@@ -242,32 +248,37 @@ class TiClothSimulation:
                                           length) * p_01.normalized()
                 self.p[self.link[l][1]] += kp * dp1
 
+    @ti.kernel
+    def compute_sdf_sum(self):
+        for vi in range(self.vertex_num):
+            self.sdf[vi] = sdf_mod.ti_sdf(self.p[vi])
+            if self.sdf[vi] < coll_eps:
+                self.sdf_sum[None] += self.sdf[vi]
+
+    @ti.kernel
+    def project_collision(self):
         for vi in range(self.vertex_num):
             if self.w[vi] > eps:
-                dist = (self.p[vi] - self.coll_origin[0]).norm()
-                # dist_diff = dist - coll_r
-                sdf = sdf_mod.ti_sdf(self.p[vi])
-                if sdf < 0.01:
-                    # dp = -dist_diff / dist * (self.p[vi] - self.coll_origin[0])
-                    sdf_g = sdf_grad(self.p[vi])
-                    dp = -sdf / sdf_g.norm_sqr() * sdf_g
+                if self.sdf[vi] < coll_eps:
+                    dp = -self.sdf[vi] / self.p.grad[vi].norm_sqr() * self.p.grad[vi]
                     self.p[vi] += dp
 
     @ti.kernel
-    def substep(self):
+    def substep_pre(self):
         for i in range(self.vertex_num):
             self.v[i] += self.dt * ti.Vector([0, 0, -9.8]) * self.w[i]
             self.v[i] *= ti.exp(-self.dt * self.drag_damping)
             self.p[i] = self.x[i] + self.dt * self.v[i]
 
-        if ti.static(self.device == 'CPU'):
-            for n in range(self.solver_num):
-                self.project_constraints(n)
-        else:
-            for _ in range(1):
-                for n in range(self.solver_num):
-                    self.project_constraints(n)
+    def substep_proj(self):
+        for n in range(self.solver_num):
+            self.project_constraints(n)
+            with ti.Tape(self.sdf_sum):
+                self.compute_sdf_sum()
+            self.project_collision()
 
+    @ti.kernel
+    def substep_post(self):
         for i in range(self.vertex_num):
             # print('p[',i,']:', p[i])
             self.v[i] = (self.p[i] - self.x[i]) / self.dt
@@ -277,18 +288,13 @@ class TiClothSimulation:
         @nb.add_animation
         def main():
             global np_para
-            
+
             for frame in range(self.frame_num):
                 yield nb.mesh_update(
                     self.me,
                     self.x.to_numpy().reshape(self.vertex_num, 3))
-                # s = 1
                 for step in range(self.substep_num):
-                    # print('frame:',frame,', substep:',s)
-                    # s += 1
-                    # self.coll_origin[0].x = self.c_obj.location[0]
-                    # self.coll_origin[0].y = self.c_obj.location[1]
-                    # self.coll_origin[0].z = self.c_obj.location[2]
+                    # print('frame:', frame, ', substep:', step)
                     if self.sdf_para_changed:
                         for node in coll_nodes.coll_node_list:
                             start_idx = node.coll_para_idx
@@ -296,4 +302,6 @@ class TiClothSimulation:
                                 np_para[start_idx + i] = node.get_para(i)
                         sdf_mod.para.from_numpy(np_para)
                         self.sdf_para_changed = False
-                    self.substep()
+                    self.substep_pre()
+                    self.substep_proj()
+                    self.substep_post()
