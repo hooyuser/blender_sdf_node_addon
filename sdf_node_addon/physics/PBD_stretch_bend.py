@@ -14,7 +14,7 @@ import pathlib
 from ..node_parser import NodeList
 
 nb.init()
-ti.init(arch=ti.cpu, debug=True, default_fp=ti.f32, kernel_profiler=False)
+ti.init(arch=ti.cpu, debug=True, default_fp=ti.f32, kernel_profiler=True)
 
 coll_r = 1.01
 k_stretch = 0.9
@@ -306,4 +306,4 @@ class TiClothSimulation:
                     self.substep_pre()
                     self.substep_proj()
                     self.substep_post()
-                    # ti.kernel_profiler_print()
+                    ti.kernel_profiler_print()
