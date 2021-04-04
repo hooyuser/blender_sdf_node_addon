@@ -166,7 +166,7 @@ def register():
 
 def unregister():
 
-    ti.kernel_profiler_print()
+    
 
     Draw.refreshViewport(False)
 

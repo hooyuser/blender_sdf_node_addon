@@ -20,7 +20,7 @@ class ProcessingGeometryOperator(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         ti_device = ti.gpu if scene.sdf_physics.device == 'GPU' else ti.cpu
-        ti.init(arch=ti_device, debug=True, default_fp=ti.f32)
+        ti.init(arch=ti_device, debug=True, default_fp=ti.f32, kernel_profiler=False)
         gen_sdf_taichi()
         cloth_simulations.clear()
         cloth_simulations.append(

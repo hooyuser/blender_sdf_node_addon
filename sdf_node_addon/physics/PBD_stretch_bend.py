@@ -14,7 +14,7 @@ import pathlib
 from ..node_parser import NodeList
 
 nb.init()
-ti.init(arch=ti.cpu, debug=True, default_fp=ti.f32, kernel_profiler=True)
+ti.init(arch=ti.cpu, debug=True, default_fp=ti.f32, kernel_profiler=False)
 
 coll_r = 1.01
 k_stretch = 0.9
@@ -127,7 +127,6 @@ class TiClothSimulation:
         self.sdf = ti.field(dtype=ti.f32,
                             shape=self.vertex_num,
                             needs_grad=True)
-        self.sdf_sum = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 
         # Long Range Attachments
         if self.enable_LRA:
@@ -249,11 +248,11 @@ class TiClothSimulation:
                 self.p[self.link[l][1]] += kp * dp1
 
     @ti.kernel
-    def compute_sdf_sum(self):
+    def compute_sdf(self):
         for vi in range(self.vertex_num):
             self.sdf[vi] = sdf_mod.ti_sdf(self.p[vi])
             if self.sdf[vi] < coll_eps:
-                self.sdf_sum[None] += self.sdf[vi]
+                self.sdf.grad[vi] = 1
 
     @ti.kernel
     def project_collision(self):
@@ -273,9 +272,10 @@ class TiClothSimulation:
     def substep_proj(self):
         for n in range(self.solver_num):
             self.project_constraints(n)
-            with ti.Tape(self.sdf_sum):
-                self.compute_sdf_sum()
+            self.compute_sdf()
+            self.compute_sdf.grad()
             self.project_collision()
+            ti.clear_all_gradients()
 
     @ti.kernel
     def substep_post(self):
@@ -295,13 +295,15 @@ class TiClothSimulation:
                     self.x.to_numpy().reshape(self.vertex_num, 3))
                 for step in range(self.substep_num):
                     # print('frame:', frame, ', substep:', step)
-                    if self.sdf_para_changed:
+                    if TiClothSimulation.sdf_para_changed:
                         for node in coll_nodes.coll_node_list:
                             start_idx = node.coll_para_idx
                             for i in range(node.para_num):
                                 np_para[start_idx + i] = node.get_para(i)
                         sdf_mod.para.from_numpy(np_para)
-                        self.sdf_para_changed = False
+                        # print(sdf_mod.para[1])
+                        TiClothSimulation.sdf_para_changed = False
                     self.substep_pre()
                     self.substep_proj()
                     self.substep_post()
+                    # ti.kernel_profiler_print()
