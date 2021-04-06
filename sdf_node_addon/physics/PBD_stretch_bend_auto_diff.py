@@ -259,7 +259,8 @@ class TiClothSimulation:
         for vi in range(self.vertex_num):
             if self.w[vi] > eps:
                 if self.sdf[vi] < coll_eps:
-                    dp = -self.sdf[vi] / self.p.grad[vi].norm_sqr() * self.p.grad[vi]
+                    dp = -self.sdf[vi] / self.p.grad[vi].norm_sqr(
+                    ) * self.p.grad[vi]
                     self.p[vi] += dp
 
     @ti.kernel
