@@ -93,6 +93,12 @@ class ClothPhysicsPanel(bpy.types.Panel):
         row.prop(sdf_phy, "device")
 
         row = layout.row()
+        row.prop(sdf_phy, "stretch_stiffness")
+
+        row = layout.row()
+        row.prop(sdf_phy, "bend_stiffness")
+
+        row = layout.row()
         row.prop(sdf_phy, "ani_para_num")
 
         if sdf_phy.cloth_obj:

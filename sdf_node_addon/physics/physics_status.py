@@ -54,12 +54,19 @@ class SdfPhyProps(bpy.types.PropertyGroup):
                                        max=1000)
 
     drag_damping: bpy.props.FloatProperty(name="Damping",
-                                          description="Solver Iterations",
+                                          description="Damping",
                                           default=1.0,
                                           min=0,
                                           max=10000)
 
-    # sdf_para_changed: bpy.props.BoolProperty(
-    #     name="SDF_para_changed",
-    #     description="SDF parameters changed",
-    #     default=True)
+    stretch_stiffness: bpy.props.FloatProperty(name="Stretching Stiffness",
+                                               description="Stretching Stiffness",
+                                               default=0.9,
+                                               min=0.001,
+                                               max=1)
+
+    bend_stiffness: bpy.props.FloatProperty(name="Bending Stiffness",
+                                               description="Bending Stiffness",
+                                               default=0.7,
+                                               min=0.001,
+                                               max=1)

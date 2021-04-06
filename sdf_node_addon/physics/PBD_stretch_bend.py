@@ -16,9 +16,8 @@ from ..node_parser import NodeList
 nb.init()
 ti.init(arch=ti.cpu, debug=True, default_fp=ti.f32, kernel_profiler=True)
 
-coll_r = 1.01
-k_stretch = 0.9
-k_bend = 0.7
+# k_stretch = 0.9
+# k_bend = 0.7
 k_LRA = 0.5
 tether_give = 0.2
 eps = 1e-3
@@ -83,8 +82,9 @@ class TiClothSimulation:
         self.sdf_phy = sdf_phy
         self.dt = sdf_phy.time_step / 1000.0
         self.device = sdf_phy.device
+        self.k_stretch = sdf_phy.stretch_stiffness
+        self.k_bend = sdf_phy.bend_stiffness
         self.substep_num = sdf_phy.substep_num
-        self.solver_num = sdf_phy.solver_num
         self.drag_damping = sdf_phy.drag_damping
         self.enable_LRA = sdf_phy.enable_LRA
         self.frame_num = bpy.context.scene.frame_end
@@ -129,6 +129,8 @@ class TiClothSimulation:
                             shape=self.vertex_num,
                             needs_grad=True)
 
+        self.solver_num = ti.field(dtype=ti.i32, shape=())
+
         # Long Range Attachments
         if self.enable_LRA:
             self.attach_index = self.obj.vertex_groups[
@@ -150,6 +152,8 @@ class TiClothSimulation:
                                        shape=(self.vertex_num,
                                               self.attach_num))
 
+        self.solver_num[None] = sdf_phy.solver_num
+
         self.initialize()
 
     @staticmethod
@@ -170,7 +174,7 @@ class TiClothSimulation:
                     [v[0 + j].index, v[1 + j].index])
                 self.link_len[self.link_idx[None]] = self.calc_dist(
                     v[0 + j].co, v[1 + j].co)
-                self.link_k[self.link_idx[None]] = k_bend
+                self.link_k[self.link_idx[None]] = self.k_bend
                 self.link_idx[None] += 1
 
     def set_edges(self):
@@ -179,7 +183,7 @@ class TiClothSimulation:
             self.link[self.link_idx[None]] = ti.Vector(
                 [e.verts[0].index, e.verts[1].index])
             self.link_len[self.link_idx[None]] = e.calc_length()
-            self.link_k[self.link_idx[None]] = k_stretch
+            self.link_k[self.link_idx[None]] = self.k_stretch
             self.link_idx[None] += 1
 
     def set_attachments(self):
@@ -217,7 +221,7 @@ class TiClothSimulation:
 
     def reset(self):
         self.substep_num = self.sdf_phy.substep_num
-        self.solver_num = self.sdf_phy.solver_num
+        self.solver_num[None] = self.sdf_phy.solver_num
         self.drag_damping = self.sdf_phy.drag_damping
         self.dt = self.sdf_phy.time_step / 1000.0
         self.frame_num = bpy.context.scene.frame_end
@@ -238,8 +242,6 @@ class TiClothSimulation:
                             dp = -0.5 * self.w[vi] * dist_diff * (
                                 self.p[vi] - self.attach_pos[att]) / dist
                             self.p[vi] += k_LRA * dp
-        #    if w[vi] > eps and dist - coll_r < 0:
-        # print(attach[0])
 
         for l in range(self.link_num):
             p0 = self.link[l][0]
@@ -283,7 +285,7 @@ class TiClothSimulation:
             self.p[i] = self.x[i] + self.dt * self.v[i]
 
     def substep_proj(self):
-        for n in range(self.solver_num):
+        for n in range(self.solver_num[None]):
             self.project_stretch_constraints(n)
             self.compute_sdf()
             self.compute_sdf.grad()
@@ -311,8 +313,6 @@ class TiClothSimulation:
                             dp = -0.5 * self.w[vi] * dist_diff * (
                                 self.p[vi] - self.attach_pos[att]) / dist
                             self.p[vi] += k_LRA * dp
-        #    if w[vi] > eps and dist - coll_r < 0:
-        # print(attach[0])
 
         for l in range(self.link_num):
             p0 = self.link[l][0]
@@ -335,7 +335,6 @@ class TiClothSimulation:
         for vi in range(self.vertex_num):
             if self.w[vi] > eps:
                 dist = (self.p[vi] - self.coll_origin[0]).norm()
-                # dist_diff = dist - coll_r
                 sdf = sdf_mod.ti_sdf(self.p[vi])
                 if sdf < coll_eps:
                     # dp = -dist_diff / dist * (self.p[vi] - self.coll_origin[0])
@@ -351,7 +350,7 @@ class TiClothSimulation:
             self.p[i] = self.x[i] + self.dt * self.v[i]
 
         for _ in range(1):
-            for n in range(self.solver_num):
+            for n in range(self.solver_num[None]):
                 self.project_constraints(n)
 
         for i in range(self.vertex_num):
