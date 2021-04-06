@@ -26,6 +26,11 @@ class SdfPhyProps(bpy.types.PropertyGroup):
                                    items=[('GPU', 'GPU', 'GPU'),
                                           ('CPU', 'CPU', 'CPU')],
                                    default="CPU")
+    grad_method: bpy.props.EnumProperty(name="Gradient",
+                                        items=[('Auto', 'Auto', 'Auto'),
+                                               ('Numerical', 'Numerical',
+                                                'Numerical')],
+                                        default="Numerical")
     ani_para_num: bpy.props.IntProperty(
         name="Parameters",
         description="The number of animated parameters",

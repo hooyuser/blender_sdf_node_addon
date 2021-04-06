@@ -24,7 +24,7 @@ class ProcessingGeometryOperator(bpy.types.Operator):
         gen_sdf_taichi()
         cloth_simulations.clear()
         cloth_simulations.append(
-            TiClothSimulation(scene.sdf_physics, scene.frame_end))
+            TiClothSimulation(scene.sdf_physics))
         return {'FINISHED'}
 
 
@@ -38,7 +38,9 @@ class SimulateOperator(bpy.types.Operator):
         return context.active_object is not None
 
     def execute(self, context):
+        nb.clear_animations()
         nb.init()
+        cloth_simulations[0].reset()
         cloth_simulations[0].animate()
         return {'FINISHED'}
 
@@ -102,7 +104,10 @@ class ClothPhysicsPanel(bpy.types.Panel):
         row.separator()
 
         row = layout.row()
-        row.label(text="Simulation Setting:")
+        row.label(text="Simulation Settings:")
+
+        row = layout.row()
+        row.prop(sdf_phy, "grad_method")
 
         row = layout.row()
         row.prop(sdf_phy, "substep_num")
