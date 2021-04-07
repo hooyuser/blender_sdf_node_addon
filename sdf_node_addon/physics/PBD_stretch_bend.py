@@ -230,19 +230,20 @@ class TiClothSimulation:
 
 ###############################################################################
 
-    @ti.kernel
-    def project_stretch_constraints(self, n: ti.i32):
-        if ti.static(self.enable_LRA):
-            for vi in range(self.vertex_num):
-                for att in range(self.attach_num):
-                    if self.w[vi] > eps:
-                        dist = (self.p[vi] - self.attach_pos[att]).norm()
-                        dist_diff = dist - self.tether_len[vi, att]
-                        if dist_diff / self.tether_len[vi, att] > tether_give:
-                            dp = -0.5 * self.w[vi] * dist_diff * (
-                                self.p[vi] - self.attach_pos[att]) / dist
-                            self.p[vi] += k_LRA * dp
+    @ti.func
+    def project_LRA_constraints(self):
+        for vi in range(self.vertex_num):
+            for att in range(self.attach_num):
+                if self.w[vi] > eps:
+                    dist = (self.p[vi] - self.attach_pos[att]).norm()
+                    dist_diff = dist - self.tether_len[vi, att]
+                    if dist_diff / self.tether_len[vi, att] > tether_give:
+                        dp = -0.5 * self.w[vi] * dist_diff * (
+                            self.p[vi] - self.attach_pos[att]) / dist
+                        self.p[vi] += k_LRA * dp
 
+    @ti.func
+    def project_stretch_constraints(self, n):
         for l in range(self.link_num):
             p0 = self.link[l][0]
             p1 = self.link[l][1]
@@ -260,6 +261,29 @@ class TiClothSimulation:
                 dp1 = 0.5 * self.w[p1] * (p_01.norm() -
                                           length) * p_01.normalized()
                 self.p[self.link[l][1]] += kp * dp1
+
+    @ti.func
+    def predict_pos(self):
+        for i in range(self.vertex_num):
+            self.v[i] += self.dt * ti.Vector([0, 0, -9.8]) * self.w[i]
+            self.v[i] *= ti.exp(-self.dt * self.drag_damping)
+            self.p[i] = self.x[i] + self.dt * self.v[i]
+
+    @ti.func
+    def update_pos(self):
+        for i in range(self.vertex_num):
+            # print('p[',i,']:', p[i])
+            self.v[i] = (self.p[i] - self.x[i]) / self.dt
+            self.x[i] = self.p[i]
+
+###############################################################################
+
+    @ti.kernel
+    def project_non_coll_constraints(self, n: ti.i32):
+        if ti.static(self.enable_LRA):
+            self.project_LRA_constraints()
+
+        self.project_stretch_constraints(n)
 
     @ti.kernel
     def compute_sdf(self):
@@ -279,14 +303,11 @@ class TiClothSimulation:
 
     @ti.kernel
     def substep_pre(self):
-        for i in range(self.vertex_num):
-            self.v[i] += self.dt * ti.Vector([0, 0, -9.8]) * self.w[i]
-            self.v[i] *= ti.exp(-self.dt * self.drag_damping)
-            self.p[i] = self.x[i] + self.dt * self.v[i]
+        self.predict_pos()
 
     def substep_proj(self):
         for n in range(self.solver_num[None]):
-            self.project_stretch_constraints(n)
+            self.project_non_coll_constraints(n)
             self.compute_sdf()
             self.compute_sdf.grad()
             self.project_collision()
@@ -294,47 +315,19 @@ class TiClothSimulation:
 
     @ti.kernel
     def substep_post(self):
-        for i in range(self.vertex_num):
-            # print('p[',i,']:', p[i])
-            self.v[i] = (self.p[i] - self.x[i]) / self.dt
-            self.x[i] = self.p[i]
+        self.update_pos()
 
 ###############################################################################
 
     @ti.func
     def project_constraints(self, n):
         if ti.static(self.enable_LRA):
-            for vi in range(self.vertex_num):
-                for att in range(self.attach_num):
-                    if self.w[vi] > eps:
-                        dist = (self.p[vi] - self.attach_pos[att]).norm()
-                        dist_diff = dist - self.tether_len[vi, att]
-                        if dist_diff / self.tether_len[vi, att] > tether_give:
-                            dp = -0.5 * self.w[vi] * dist_diff * (
-                                self.p[vi] - self.attach_pos[att]) / dist
-                            self.p[vi] += k_LRA * dp
+            self.project_LRA_constraints()
 
-        for l in range(self.link_num):
-            p0 = self.link[l][0]
-            p1 = self.link[l][1]
-            p_01 = self.p[p0] - self.p[p1]
-
-            kp = 1 - pow((1 - self.link_k[l]), 1 / (n + 1))
-
-            length = self.link_len[l]
-            if self.w[p0] > eps:
-                dp0 = -0.5 * self.w[p0] * (p_01.norm() -
-                                           length) * p_01.normalized()
-                self.p[self.link[l][0]] += kp * dp0
-
-            if self.w[p1] > eps:
-                dp1 = 0.5 * self.w[p1] * (p_01.norm() -
-                                          length) * p_01.normalized()
-                self.p[self.link[l][1]] += kp * dp1
+        self.project_stretch_constraints(n)
 
         for vi in range(self.vertex_num):
             if self.w[vi] > eps:
-                dist = (self.p[vi] - self.coll_origin[0]).norm()
                 sdf = sdf_mod.ti_sdf(self.p[vi])
                 if sdf < coll_eps:
                     # dp = -dist_diff / dist * (self.p[vi] - self.coll_origin[0])
@@ -344,19 +337,13 @@ class TiClothSimulation:
 
     @ti.kernel
     def substep(self):
-        for i in range(self.vertex_num):
-            self.v[i] += self.dt * ti.Vector([0, 0, -9.8]) * self.w[i]
-            self.v[i] *= ti.exp(-self.dt * self.drag_damping)
-            self.p[i] = self.x[i] + self.dt * self.v[i]
+        self.predict_pos()
 
         for _ in range(1):
             for n in range(self.solver_num[None]):
                 self.project_constraints(n)
 
-        for i in range(self.vertex_num):
-            # print('p[',i,']:', p[i])
-            self.v[i] = (self.p[i] - self.x[i]) / self.dt
-            self.x[i] = self.p[i]
+        self.update_pos()
 
 
 ###############################################################################
