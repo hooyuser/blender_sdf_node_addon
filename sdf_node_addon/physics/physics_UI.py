@@ -3,6 +3,7 @@ import numblend as nb
 import taichi as ti
 
 from .PBD_stretch_bend import TiClothSimulation
+from .PBD_stretch_bend import def_sdf_para
 from .PBD_stretch_bend import gen_sdf_taichi
 
 cloth_simulations = []
@@ -21,7 +22,8 @@ class ProcessingGeometryOperator(bpy.types.Operator):
         scene = context.scene
         ti_device = ti.gpu if scene.sdf_physics.device == 'GPU' else ti.cpu
         ti.init(arch=ti_device, debug=True, default_fp=ti.f32, kernel_profiler=True)
-        gen_sdf_taichi()
+        # gen_sdf_taichi()
+        def_sdf_para()
         cloth_simulations.clear()
         cloth_simulations.append(
             TiClothSimulation(scene.sdf_physics))
@@ -40,6 +42,7 @@ class SimulateOperator(bpy.types.Operator):
     def execute(self, context):
         nb.clear_animations()
         nb.init()
+        gen_sdf_taichi()
         cloth_simulations[0].reset()
         cloth_simulations[0].animate()
         return {'FINISHED'}
@@ -114,6 +117,9 @@ class ClothPhysicsPanel(bpy.types.Panel):
 
         row = layout.row()
         row.prop(sdf_phy, "grad_method")
+
+        row = layout.row()
+        row.prop(sdf_phy, "analytical_grad")
 
         row = layout.row()
         row.prop(sdf_phy, "substep_num")

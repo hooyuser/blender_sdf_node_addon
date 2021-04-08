@@ -16,16 +16,16 @@ from ..node_parser import NodeList
 nb.init()
 ti.init(arch=ti.cpu, debug=True, default_fp=ti.f32, kernel_profiler=True)
 
-# k_stretch = 0.9
-# k_bend = 0.7
 k_LRA = 0.5
 tether_give = 0.2
 eps = 1e-3
 
-coll_eps = 0.01
+coll_eps = 0.0
+
+enable_analitical_grad = True
 
 ###############################################################################
-coll_nodes = NodeList()
+coll_nodes = NodeList()  # SDF nodes related to collision
 np_para = None
 
 temp = tempfile.NamedTemporaryFile(suffix='.py', delete=False)
@@ -33,23 +33,35 @@ temp.close()
 temp_path = pathlib.Path(temp.name)
 path.append(str(temp_path.parent))
 sdf_mod = importlib.import_module(temp_path.stem)
+# sdf_mod is a module in which taichi functions are defined
+
+
+def def_sdf_para():
+    global np_para  # para refers to animated parameters
+    para_num = bpy.context.scene.sdf_physics.ani_para_num
+    taichi_sdf_para_codes = f'''
+import bpy
+import taichi as ti
+
+para = ti.field(dtype=ti.f32, shape={para_num})
+'''
+    with open(temp.name, "w") as f:
+        f.write(taichi_sdf_para_codes)
+    importlib.reload(sdf_mod)
+    np_para = np.zeros((para_num), dtype=np.float64)
 
 
 def gen_sdf_taichi():
-    global np_para
+    global enable_analitical_grad
     sdf_phy = bpy.context.scene.sdf_physics
     collision_tree = sdf_phy.c_sdf
     if collision_tree:
         coll_node = bpy.context.scene.sdf_node_data.active_collider
         if coll_node:
             coll_nodes.gen_collision_node_list(collision_tree.nodes[coll_node])
-
-            # para refers to animated parameters
             taichi_sdf_codes = f'''
 import bpy
 import taichi as ti
-
-para = ti.field(dtype=ti.f32, shape={sdf_phy.ani_para_num})
 ''' + coll_nodes.taichi_func_text + '''
 @ti.func
 def ti_sdf(p):
@@ -59,7 +71,11 @@ def ti_sdf(p):
             with open(temp.name, "w") as f:
                 f.write(taichi_sdf_codes)
             importlib.reload(sdf_mod)
-            np_para = np.zeros((sdf_phy.ani_para_num), dtype=np.float64)
+            if len(coll_nodes.coll_node_list
+                   ) == 1 and bpy.context.scene.sdf_physics.analytical_grad:
+                enable_analitical_grad = True
+            else:
+                enable_analitical_grad = False
 
 
 ###############################################################################
@@ -105,6 +121,7 @@ class TiClothSimulation:
         self.x = ti.Vector.field(3, dtype=ti.f32, shape=self.vertex_num)
 
         # predicted vertex position
+
         self.p = ti.Vector.field(3,
                                  dtype=ti.f32,
                                  shape=self.vertex_num,
@@ -227,6 +244,7 @@ class TiClothSimulation:
         self.frame_num = bpy.context.scene.frame_end
         for i in range(self.vertex_num):
             self.x[i] = ti.Vector(list(self.bm.verts[i].co))
+            self.v[i] = 0
 
 ###############################################################################
 
@@ -277,6 +295,8 @@ class TiClothSimulation:
             self.x[i] = self.p[i]
 
 ###############################################################################
+# Auto Gradient
+###############################################################################
 
     @ti.kernel
     def project_non_coll_constraints(self, n: ti.i32):
@@ -318,6 +338,8 @@ class TiClothSimulation:
         self.update_pos()
 
 ###############################################################################
+# Numerical Gradient
+###############################################################################
 
     @ti.func
     def project_constraints(self, n):
@@ -345,11 +367,40 @@ class TiClothSimulation:
 
         self.update_pos()
 
+###############################################################################
+# Analytical Gradient
+###############################################################################
 
+    @ti.func
+    def project_constraints_analytical(self, n):
+        if ti.static(self.enable_LRA):
+            self.project_LRA_constraints()
+
+        self.project_stretch_constraints(n)
+
+        for vi in range(self.vertex_num):
+            if self.w[vi] > eps:
+                sdf_mod.update_p_by_collision(self, vi)
+
+
+    @ti.kernel
+    def substep_analytical(self):
+        self.predict_pos()
+
+        for _ in range(1):
+            for n in range(self.solver_num[None]):
+                self.project_constraints(n)
+
+        self.update_pos()
+ 
+###############################################################################
+# Animate
 ###############################################################################
 
     def animate(self):
-        if self.sdf_phy.grad_method == 'Auto':
+        if enable_analitical_grad:
+            self.animate_analytical_diff()
+        elif self.sdf_phy.grad_method == 'Auto':
             self.animate_auto_diff()
         else:
             self.animate_n_diff()
@@ -397,4 +448,25 @@ class TiClothSimulation:
                         sdf_mod.para.from_numpy(np_para)
                         TiClothSimulation.sdf_para_changed = False
                     self.substep()
+                    # ti.kernel_profiler_print()
+
+    def animate_analytical_diff(self):
+        @nb.add_animation
+        def main():
+            global np_para
+
+            for frame in range(self.frame_num):
+                yield nb.mesh_update(
+                    self.me,
+                    self.x.to_numpy().reshape(self.vertex_num, 3))
+                for step in range(self.substep_num):
+                    # print('frame:',frame,', substep:',s)
+                    if TiClothSimulation.sdf_para_changed:
+                        for node in coll_nodes.coll_node_list:
+                            start_idx = node.coll_para_idx
+                            for i in range(node.para_num):
+                                np_para[start_idx + i] = node.get_para(i)
+                        sdf_mod.para.from_numpy(np_para)
+                        TiClothSimulation.sdf_para_changed = False
+                    self.substep_analytical()
                     # ti.kernel_profiler_print()

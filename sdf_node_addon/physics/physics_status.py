@@ -31,6 +31,7 @@ class SdfPhyProps(bpy.types.PropertyGroup):
                                                ('Numerical', 'Numerical',
                                                 'Numerical')],
                                         default="Numerical")
+
     ani_para_num: bpy.props.IntProperty(
         name="Parameters",
         description="The number of animated parameters",
@@ -59,14 +60,20 @@ class SdfPhyProps(bpy.types.PropertyGroup):
                                           min=0,
                                           max=10000)
 
-    stretch_stiffness: bpy.props.FloatProperty(name="Stretching Stiffness",
-                                               description="Stretching Stiffness",
-                                               default=0.9,
-                                               min=0.001,
-                                               max=1)
+    stretch_stiffness: bpy.props.FloatProperty(
+        name="Stretching Stiffness",
+        description="Stretching Stiffness",
+        default=0.9,
+        min=0.001,
+        max=1)
 
     bend_stiffness: bpy.props.FloatProperty(name="Bending Stiffness",
-                                               description="Bending Stiffness",
-                                               default=0.7,
-                                               min=0.001,
-                                               max=1)
+                                            description="Bending Stiffness",
+                                            default=0.7,
+                                            min=0.001,
+                                            max=1)
+
+    analytical_grad: bpy.props.BoolProperty(
+        name="Try Using Analytical Gradient",
+        description="Use analytical gradient when possible",
+        default=True)

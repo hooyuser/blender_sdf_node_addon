@@ -48,6 +48,14 @@ class SphereSDFNode(bpy.types.Node, CustomNode):
 @ti.func
 def f_{me}(p):
     return (p-ti.Vector([para[{self.coll_para_idx + 1}], para[{self.coll_para_idx + 2}], para[{self.coll_para_idx + 3}]])).norm() - para[{self.coll_para_idx}]
+
+@ti.func
+def update_p_by_collision(self, vi):
+    rel_p = p - ti.Vector([para[{self.coll_para_idx + 1}], para[{self.coll_para_idx + 2}], para[{self.coll_para_idx + 3}]])
+    rel_p_norm = rel_p.norm()
+    sdf = rel_p.norm() - para[{self.coll_para_idx}]
+    if sdf < 0:
+        self.p[vi] += - sdf / rel_p_norm * rel_p
 '''
 
     def gen_taichi(self, ref_stack):
