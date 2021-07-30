@@ -15,7 +15,7 @@ class CustomSimpleInputNode(bpy.types.Node, CustomNode):
 
     # we can add properties here that the node uses locally
     # NOTE: does not get drawn automatically
-    intProp = bpy.props.IntProperty()
+    intProp: bpy.props.IntProperty()
 
     # init function that is automagickally is called when the
     #   node is instantiated into the treem setup sockets here

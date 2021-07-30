@@ -39,11 +39,11 @@ class ViewerNode(bpy.types.Node, CustomNode):
         elif context.scene.sdf_node_data.active_collider == self.name:
             context.scene.sdf_node_data.active_collider = ''
 
-    enabled_show = bpy.props.BoolProperty(name="Enabled_show",
+    enabled_show: bpy.props.BoolProperty(name="Enabled_show",
                                           default=False,
                                           update=update_show)
 
-    enabled_collision = bpy.props.BoolProperty(name="Enabled_collision",
+    enabled_collision: bpy.props.BoolProperty(name="Enabled_collision",
                                                default=False,
                                                update=update_collision)
 

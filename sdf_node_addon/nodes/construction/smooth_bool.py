@@ -25,7 +25,7 @@ class SmoothBoolNode(bpy.types.Node, CustomNode):
     def update_prop(self, context):
         Draw.update_callback()
 
-    operation = bpy.props.EnumProperty(name="Operation",
+    operation: bpy.props.EnumProperty(name="Operation",
                                        default="S_UNION",
                                        items=operationItems,
                                        update=update_prop)

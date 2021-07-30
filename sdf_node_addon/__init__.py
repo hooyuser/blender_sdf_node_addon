@@ -11,13 +11,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+import os
+bundle_path = os.path.join(os.path.dirname(__file__), 'bundle_packages')
+# sys.path.append("./bundle_packages")
+if bundle_path not in sys.path:
+        sys.path.insert(0, bundle_path)
+
 import bpy
 import nodeitems_utils
 
 import os
 import atexit
 
-import taichi as ti
+#import taichi as ti
 
 from . import auto_load
 from .redrawViewport import Draw
@@ -191,3 +198,4 @@ atexit.register(cleanup_temp)
 
 if __name__ == '__main__':
     register()
+    import taichi as ti

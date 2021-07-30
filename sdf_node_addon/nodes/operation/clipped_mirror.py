@@ -13,7 +13,7 @@ class ClippedMirrorNode(bpy.types.Node, CustomNode):
     def update_prop(self, context):
         Draw.update_callback()
 
-    mirror_axis = bpy.props.BoolVectorProperty(update=update_prop)
+    mirror_axis: bpy.props.BoolVectorProperty(update=update_prop)
 
     def draw_buttons(self, context, layout):
         col = layout.column()

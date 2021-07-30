@@ -18,7 +18,7 @@ class FloatInputNode(bpy.types.Node, CustomNode):
             link.to_socket.default_value = self.value
             # Draw.update_callback(update_node=link.to_node)
 
-    value = bpy.props.FloatProperty(update=update_prop)
+    value: bpy.props.FloatProperty(update=update_prop)
 
     def init(self, context):
         self.index = -3
