@@ -9,7 +9,7 @@ This addon is still work-in-progress. Though the SDF rendering node system is re
 ## Download
 - Addons for Blender 3.0
   - Download the [master branch](https://github.com/hooyuser/blender_sdf_node_addon/archive/refs/heads/master.zip) and then copy the `sdf_node_addon` folder to your Blender's `/scripts/addons/` folder directly.
-  - Download the [pre-release](https://github.com/hooyuser/blender_sdf_node_addon/releases/download/0.0.3/sdf_node_addon_beta_0.0.3.zip) and install it like any other addons for Blender.
+  - Download the [pre-release](https://github.com/hooyuser/blender_sdf_node_addon/releases/download/0.0.3/sdf_node_beta_0_0_3.zip) and install it like any other addons for Blender.
 - Addons for Blender 2.92
   - Download the [blender2.92 branch](https://github.com/hooyuser/blender_sdf_node_addon/archive/refs/heads/blender2.92.zip). This branch will not get updated anymore.
 
