@@ -78,7 +78,7 @@ class NodeList(object):
             # inspect.cleandoc(self.glsl_sdf_text)
 
         else:
-            self.glsl_sdf_text = 'return 2 * MAX_DIST;'
+            self.glsl_sdf_text = 'return SDFInfo(2 * MAX_DIST, 0);'
 
     def gen_collision_node_list(self, node_in):
         self.reset_collision_nodes()
@@ -108,8 +108,6 @@ class NodeList(object):
             self.taichi_sdf_text = '''
     return 1e19'''
 
-        
-
     def update_glsl_func(self, node):
         if self.node_list:
             self.glsl_func_list[node.index] = node.gen_glsl_func()
@@ -137,7 +135,7 @@ class NodeList(object):
 
                         # print(node.name, ':', node.index, node.ref_num)
                         operation(node)
-    
+
     def collision_follow_links(self, node_in, operation):
         for n_inputs in node_in.inputs:
             for node_link in n_inputs.links:
@@ -154,7 +152,8 @@ class NodeList(object):
                             self.coll_ref_stacks.append([0])
                         else:
                             node.coll_ref_num += 1
-                            self.coll_ref_stacks[node.coll_index].append(node.coll_ref_num)
+                            self.coll_ref_stacks[node.coll_index].append(
+                                node.coll_ref_num)
 
                         # print(node.name, ':', node.index, node.ref_num)
                         operation(node)

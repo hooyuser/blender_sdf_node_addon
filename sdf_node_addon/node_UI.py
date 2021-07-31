@@ -2,6 +2,7 @@ import bpy
 
 from .redrawViewport import Draw
 
+
 class SdfNodePanel(bpy.types.Panel):
     bl_label = "SDF Node"
     bl_idname = "SDF_PT_NODE_PANEL"
@@ -34,7 +35,8 @@ class ViewportRenderOperator(bpy.types.Operator):
     bl_label = "Viewport Render SDF"
     bl_options = {'REGISTER', 'UNDO'}
 
-    render_sdf_only: bpy.props.BoolProperty(name="Render SDF Only", default=False)
+    render_sdf_only: bpy.props.BoolProperty(
+        name="Render SDF Only", default=False)
 
     @classmethod
     def poll(cls, context):
@@ -51,6 +53,7 @@ class ViewportRenderOperator(bpy.types.Operator):
 
 
 def menu_func(self, context):
-        self.layout.operator(ViewportRenderOperator.bl_idname)
+    self.layout.operator(ViewportRenderOperator.bl_idname)
+
 
 bpy.types.VIEW3D_MT_view.append(menu_func)

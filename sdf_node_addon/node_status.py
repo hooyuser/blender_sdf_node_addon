@@ -26,7 +26,7 @@ class Status(object):
     @staticmethod
     def sdf_node_trees():
         node_tree_list = []
-        for node_tree in bpy.data.node_groups:
+        for node_tree in getattr(bpy.data, "node_groups", []):
             if node_tree.bl_idname == 'SDFNodeTree':
                 node_tree_list.append(node_tree)
         return node_tree_list

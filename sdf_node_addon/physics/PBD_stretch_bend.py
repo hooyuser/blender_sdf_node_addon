@@ -6,12 +6,12 @@ from math import sqrt
 
 import bpy
 import importlib
-import tempfile
 
 from sys import path
 import pathlib
 
 from ..node_parser import NodeList
+from .temp_taichi_code import temp
 
 nb.init()
 ti.init(arch=ti.cpu, debug=True, default_fp=ti.f32, kernel_profiler=True)
@@ -28,8 +28,8 @@ enable_analitical_grad = True
 coll_nodes = NodeList()  # SDF nodes related to collision
 np_para = None
 
-temp = tempfile.NamedTemporaryFile(suffix='.py', delete=False)
-temp.close()
+# temp = tempfile.NamedTemporaryFile(suffix='.py', delete=False)
+# temp.close()
 temp_path = pathlib.Path(temp.name)
 path.append(str(temp_path.parent))
 sdf_mod = importlib.import_module(temp_path.stem)

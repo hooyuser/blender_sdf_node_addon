@@ -1,4 +1,7 @@
+import inspect
+
 import bpy
+
 from ...base_types.base_node import CustomNode
 from ...redrawViewport import Draw
 
@@ -11,6 +14,7 @@ class OutputGLSLOperator(bpy.types.Operator):
     def execute(self, context):
         sdf_text = bpy.data.texts.new("sdf.glsl")
         sdf_text.clear()
+        inspect.cleandoc(Draw.frag_shader_code)
         sdf_text.write(Draw.frag_shader_code)
         return {'FINISHED'}
 

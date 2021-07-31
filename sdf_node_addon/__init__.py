@@ -13,27 +13,22 @@
 
 import sys
 import os
-bundle_path = os.path.join(os.path.dirname(__file__), 'bundle_packages')
-if bundle_path not in sys.path:
-        sys.path.insert(0, bundle_path)
 
 import bpy
 from bpy.app.handlers import persistent
 
 import nodeitems_utils
-
-import os
 import atexit
 
-import taichi as ti
-
 from . import auto_load
-from .node_UI import menu_func
 from .redrawViewport import Draw
 from .node_status import SdfNodeProps, Status
 from .physics.physics_status import SdfPhyProps
-from .physics.PBD_stretch_bend import temp
+from .physics.temp_taichi_code import temp
 
+bundle_path = os.path.join(os.path.dirname(__file__), 'bundle_packages')
+if bundle_path not in sys.path:
+    sys.path.insert(0, bundle_path)
 
 bl_info = {
     "name": "sdf node",
@@ -164,11 +159,13 @@ node_categories = [
 
 auto_load.init()
 
+
 def disable_sdf():
     for node_tree in Status.sdf_node_trees():
         for node in node_tree.nodes:
             if node.bl_idname == 'Viewer':
                 node.enabled_show = False
+
 
 @persistent
 def load_handler(dummy):
@@ -178,13 +175,14 @@ def load_handler(dummy):
 def register():
     auto_load.register()
     nodeitems_utils.register_node_categories("CUSTOM_NODES", node_categories)
-    
+
     bpy.types.Scene.sdf_physics = bpy.props.PointerProperty(type=SdfPhyProps)
     bpy.types.Scene.sdf_node_data = bpy.props.PointerProperty(
         type=SdfNodeProps)
 
     bpy.app.handlers.load_post.append(load_handler)
     disable_sdf()
+    # import taichi as ti
 
 
 def unregister():
@@ -212,7 +210,3 @@ atexit.register(cleanup_temp)
 
 if __name__ == '__main__':
     register()
-    
-
-
-
