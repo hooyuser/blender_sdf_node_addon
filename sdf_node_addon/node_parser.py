@@ -11,6 +11,7 @@ class NodeList(object):
 
     def reset_display_nodes(self):
         self.node_list = []
+        self.material_node_list = []
         self.ref_stacks = []
         self.glsl_func_list = []
         self.glsl_p_list = []
@@ -78,7 +79,7 @@ class NodeList(object):
             # inspect.cleandoc(self.glsl_sdf_text)
 
         else:
-            self.glsl_sdf_text = 'return SDFInfo(2 * MAX_DIST, 0);'
+            self.glsl_sdf_text = 'return SDFInfo(2.0 * MAX_DIST, 0);'
 
     def gen_collision_node_list(self, node_in):
         self.reset_collision_nodes()
@@ -129,6 +130,11 @@ class NodeList(object):
                             node.index = len(self.node_list)
                             self.node_list.append(node)
                             self.ref_stacks.append([0])
+                            if node.bl_idname[-8:] == "Material":
+                                node.material_id = len(
+                                    self.material_node_list)
+                                self.material_node_list.append(node)
+
                         else:
                             node.ref_num += 1
                             self.ref_stacks[node.index].append(node.ref_num)

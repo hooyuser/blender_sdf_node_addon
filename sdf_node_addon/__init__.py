@@ -105,6 +105,11 @@ node_categories = [
                                                     label="Smooth Bool"),
                            nodeitems_utils.NodeItem("Blend", label="Blend"),
                        ]),
+    CustomNodeCategory("MATERIAL_NODES",
+                       "Material",
+                       items=[
+                           nodeitems_utils.NodeItem("PBRMaterial", label="PBR Material"),
+                       ]),
     CustomNodeCategory("DISPLACEMENT_NODES",
                        "Displacement",
                        items=[

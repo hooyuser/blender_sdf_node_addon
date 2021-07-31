@@ -14,8 +14,8 @@ class OutputGLSLOperator(bpy.types.Operator):
     def execute(self, context):
         sdf_text = bpy.data.texts.new("sdf.glsl")
         sdf_text.clear()
-        inspect.cleandoc(Draw.frag_shader_code)
-        sdf_text.write(Draw.frag_shader_code)
+        shader_code = inspect.cleandoc(Draw.frag_shader_code)
+        sdf_text.write(shader_code)
         return {'FINISHED'}
 
 

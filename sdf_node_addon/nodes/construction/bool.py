@@ -27,9 +27,9 @@ class BoolNode(bpy.types.Node, CustomNode):
         Draw.update_callback()
 
     operation: bpy.props.EnumProperty(name="Operation",
-                                       default="UNION",
-                                       items=operationItems,
-                                       update=update_prop)
+                                      default="UNION",
+                                      items=operationItems,
+                                      update=update_prop)
 
     def draw_buttons(self, context, layout):
         layout.prop(self, "operation", text="")
@@ -49,20 +49,23 @@ class BoolNode(bpy.types.Node, CustomNode):
     def gen_glsl_func(self):
 
         if self.operation == "UNION":
-            return f'''float f_{self.index}(float d1, float d2){{
-                    return min(d1,d2);
-                }}
-                '''
+            return f'''
+SDFInfo f_{self.index}(SDFInfo d1, SDFInfo d2){{
+    return (d1.sd < d2.sd) ? d1 : d2;
+}}
+'''
         elif self.operation == "INTERSECT":
-            return f'''float f_{self.index}(float d1, float d2){{
-                    return max(d1,d2);
-                }}
+            return f'''
+SDFInfo f_{self.index}(SDFInfo d1, SDFInfo d2){{
+    return (d1.sd > d2.sd) ? d1 : d2;
+}}
                 '''
         else:
-            return f'''float f_{self.index}(float d1, float d2){{
-                    return max(d1,-d2);
-                }}
-                '''
+            return f'''
+SDFInfo f_{self.index}(SDFInfo d1, SDFInfo d2){{
+    return (d1.sd > -d2.sd) ? d1 : SDFInfo(-d2.sd, d2.materialID) ;
+}}
+'''
 
     def gen_glsl(self, ref_stacks):
         me = self.index
@@ -77,7 +80,7 @@ class BoolNode(bpy.types.Node, CustomNode):
             vec3 p_{input_0_p}_{input_0_ref}=p_{me}_{ref_i};
             '''
         else:
-            input_0_d = '2.0 * MAX_DIST'
+            input_0_d = 'SDFInfo(2.0 * MAX_DIST, 0)'
             glsl_p = ''
 
         if self.inputs[1].links:
@@ -89,9 +92,59 @@ class BoolNode(bpy.types.Node, CustomNode):
             vec3 p_{input_1_p}_{input_1_ref}=p_{me}_{ref_i};
             '''
         else:
-            input_1_d = '2.0 * MAX_DIST'
+            input_1_d = 'SDFInfo(2.0 * MAX_DIST, 0)'
 
         glsl_d = f'''
-        float d_{me}_{ref_i}=f_{me}({input_0_d},{input_1_d});
-        '''
+    SDFInfo d_{me}_{ref_i}=f_{me}({input_0_d},{input_1_d});
+'''
         return glsl_p, glsl_d
+
+    # def gen_glsl_func_simple(self):
+
+    #     if self.operation == "UNION":
+    #         return f'''float f_{self.index}(float d1, float d2){{
+    #                 return min(d1,d2);
+    #             }}
+    #             '''
+    #     elif self.operation == "INTERSECT":
+    #         return f'''float f_{self.index}(float d1, float d2){{
+    #                 return max(d1,d2);
+    #             }}
+    #             '''
+    #     else:
+    #         return f'''float f_{self.index}(float d1, float d2){{
+    #                 return max(d1,-d2);
+    #             }}
+    #             '''
+
+    # def gen_glsl_simple(self, ref_stacks):
+    #     me = self.index
+    #     ref_i = self.ref_num
+
+    #     if self.inputs[0].links:
+    #         input_0 = self.inputs[0].links[0].from_node
+    #         input_0_p = input_0.index
+    #         input_0_ref = ref_stacks[input_0_p].pop()
+    #         input_0_d = f'd_{input_0_p}_{input_0_ref}'
+    #         glsl_p = f'''
+    #         vec3 p_{input_0_p}_{input_0_ref}=p_{me}_{ref_i};
+    #         '''
+    #     else:
+    #         input_0_d = '2.0 * MAX_DIST'
+    #         glsl_p = ''
+
+    #     if self.inputs[1].links:
+    #         input_1 = self.inputs[1].links[0].from_node
+    #         input_1_p = input_1.index
+    #         input_1_ref = ref_stacks[input_1_p].pop()
+    #         input_1_d = f'd_{input_1_p}_{input_1_ref}'
+    #         glsl_p += f'''
+    #         vec3 p_{input_1_p}_{input_1_ref}=p_{me}_{ref_i};
+    #         '''
+    #     else:
+    #         input_1_d = '2.0 * MAX_DIST'
+
+    #     glsl_d = f'''
+    #     float d_{me}_{ref_i}=f_{me}({input_0_d},{input_1_d});
+    #     '''
+    #     return glsl_p, glsl_d

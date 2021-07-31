@@ -128,6 +128,26 @@ class SdfNodeSocketFloatVector(bpy.types.NodeSocket, BaseNodeSocket):
         return (0.3, 0.4, 0.7, 1)
 
 
+class SdfNodeSocketColor(bpy.types.NodeSocket, BaseNodeSocket):
+
+    bl_idname = "SdfNodeSocketColor"
+    bl_label = "SDF Node Socket Color"
+
+    default_value: bpy.props.FloatVectorProperty(default=(1.0, 1.0, 1.0),
+        subtype='COLOR', update=BaseNodeSocket.default_value_callback)
+
+    # Optional function for drawing the socket input value
+    def draw(self, context, layout, node, text):
+        if self.is_output or self.is_linked:
+            layout.label(text=text)
+        else:
+            col = layout.column()
+            col.prop(self, "default_value", text=text)
+
+    def draw_color(self, context, node):
+        return (0.7, 0.6, 0.3, 1)
+
+
 class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket, BaseNodeSocket):
 
     bl_idname = "SdfNodeSocketVectorTranslation"

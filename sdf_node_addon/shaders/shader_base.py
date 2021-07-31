@@ -15,17 +15,6 @@ sdf_num = 8
 mat_pbr_num = 1
 
 f_1 = f'''
-precision highp float;
-
-in vec2 position;
-out vec4 fragColor;
-uniform mat4 PersInv;
-uniform mat4 ViewInv;
-uniform vec3 CamLoc;
-// uniform vec3 LightLoc;
-uniform vec2 Size;
-uniform bool IsPers;
-
 #define PI 3.1415926535
 #define EPSILON 0.0001
 #define UPPER 0.9999
@@ -37,19 +26,32 @@ uniform bool IsPers;
 #define LIGHT_NUM {light_num}
 #define MAT_PBR_NUM {mat_pbr_num}
 
+precision highp float;
+
+in vec2 position;
+out vec4 fragColor;
+uniform mat4 PersInv;
+uniform mat4 ViewInv;
+uniform vec3 CamLoc;
+// uniform vec3 LightLoc;
+uniform vec2 Size;
+uniform bool IsPers;
+uniform vec3 LightPos[LIGHT_NUM];
+uniform vec3 LightColor[LIGHT_NUM];
+
+
 struct SDFInfo{{
     float sd;// signed distance
     int materialID;
 }};
-SDFInfo SDF[{sdf_num}];
 
-struct Light {{
-    vec3 pos;
-    vec3 color;
-}};
-Light lights[LIGHT_NUM] = Light[LIGHT_NUM](
-    Light(vec3(-2.0, -4.0, 5.0), vec3(1.0) * 4.)
-);
+//struct Light {{
+//    vec3 pos;
+//    vec3 color;
+//}};
+//Light lights[LIGHT_NUM] = Light[LIGHT_NUM](
+//    Light(vec3(-2.0, -4.0, 5.0), vec3(1.0) * 4.)
+//);
 
 struct PBRMaterial{{
     vec3 baseColor;
@@ -58,7 +60,7 @@ struct PBRMaterial{{
     float specular;
 }};
 PBRMaterial pbr_mat[MAT_PBR_NUM] = PBRMaterial[MAT_PBR_NUM](
-    PBRMaterial(vec3(0.2, 0.4, 0.5), 0.0, 0.5, 0.5)
+    PBRMaterial(vec3(0.7, 0.8, 0.5), 0.0, 0.5, 0.5)
 );
 
 
@@ -285,15 +287,15 @@ SDFInfo shortestDistanceToSurface(
     return safe_dist;
 }
 
-vec3 objectPBRLighting(Light light, vec3 p, vec3 v, vec3 n, PBRMaterial mat) {
+vec3 objectPBRLighting(int light_idx, vec3 p, vec3 v, vec3 n, PBRMaterial mat) {
     vec3 baseColor = mat.baseColor;
     float metalness = mat.metalness;
     float roughness = mat.roughness;
     float specular = mat.specular;
 
-    float falloffLength = length(light.pos - p);
+    float falloffLength = length(LightPos[light_idx] - p);
     //l: vector from sample point to light
-    vec3 l = (light.pos - p) / falloffLength;
+    vec3 l = (LightPos[light_idx] - p) / falloffLength;
     //h: normal vector of the microface at the sample point
     vec3 h = normalize(v + l);
     float a = roughness * roughness;
@@ -313,12 +315,12 @@ vec3 objectPBRLighting(Light light, vec3 p, vec3 v, vec3 n, PBRMaterial mat) {
         * (1. - dotHV) * (1. - dotHV) * (1. - dotHV);
     vec3 kD = (1. - F) * (1. - metalness);
     vec3 f = kD * baseColor / PI + F * D * Vis;
-    return PI * f * light.color * dotNL / falloffLength;
+    return PI * f * LightColor[light_idx] * dotNL / falloffLength;
 }
 
-vec3 lighting(Light light, vec3 p, vec3 v, vec3 n, int mID) {
+vec3 lighting(int light_idx, vec3 p, vec3 v, vec3 n, int mID) {
     if (mID == 0) {
-        return objectPBRLighting(light, p, v, n, pbr_mat[0]);
+        return objectPBRLighting(light_idx, p, v, n, pbr_mat[0]);
     }
     else {
         return vec3(0.0);
@@ -329,7 +331,7 @@ vec4 sceneRender(vec3 p, vec3 v, int mID){
     vec3 color = vec3(AMBIENT_ALBEDO);
     vec3 n = calcNormal(p);
     for (int i = 0; i < LIGHT_NUM; ++i) {
-        color += lighting (lights[i], p, v, n, mID);
+        color += lighting (i, p, v, n, mID);
     }
     return vec4(color, 1.0);
 }

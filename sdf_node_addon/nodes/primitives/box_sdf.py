@@ -27,6 +27,23 @@ class BoxSDFNode(bpy.types.Node, CustomNode):
     def gen_glsl_func(self):
         loc = self.inputs[3].default_value
         return f'''
+            SDFInfo f_{self.index}(vec3 p){{
+                vec3 q = abs(p - vec3({loc[0]},{loc[1]},{loc[2]})) -
+                    vec3({self.inputs[0].default_value},{self.inputs[1].default_value},{self.inputs[2].default_value});
+                return SDFInfo(length(max(q,0.0)) +
+                    min(max(q.x,max(q.y,q.z)),0.0), 0);
+            }}
+            '''
+
+    def gen_glsl(self, ref_stack):
+        me = self.index
+        return '', f'''
+            SDFInfo d_{me}_{self.ref_num}=f_{me}(p_{me}_{self.ref_num});
+        '''
+
+    def gen_glsl_func_simple(self):
+        loc = self.inputs[3].default_value
+        return f'''
             float f_{self.index}(vec3 p){{
                 vec3 q = abs(p - vec3({loc[0]},{loc[1]},{loc[2]})) -
                     vec3({self.inputs[0].default_value},{self.inputs[1].default_value},{self.inputs[2].default_value});
@@ -35,7 +52,7 @@ class BoxSDFNode(bpy.types.Node, CustomNode):
             }}
             '''
 
-    def gen_glsl(self, ref_stack):
+    def gen_glsl_simple(self, ref_stack):
         me = self.index
         return '', f'''
             float d_{me}_{self.ref_num}=f_{me}(p_{me}_{self.ref_num});

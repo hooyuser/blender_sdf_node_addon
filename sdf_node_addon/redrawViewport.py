@@ -57,8 +57,15 @@ class Draw(object):
                                     [region.width / 2, region.height / 2],
                                     clamp=10.0)
 
-                        cls.config["light"] = mathutils.Vector(
-                            cls.rot(cls.config["cam"], 30, -30))
+                        # cls.config["light"] = mathutils.Vector(
+                        #    cls.rot(cls.config["cam"], 30, -30))
+        lights = [ob for ob in bpy.context.scene.objects
+                  if ob.type == "LIGHT" and ob.data.type == 'POINT']
+        cls.config["light_pos"] = [light.location[j]
+                                   for j in range(3) for light in lights]
+        cls.config["light_color"] = [
+            (light.data.energy * light.data.color / 500.0)[j]
+            for j in range(3) for light in lights]
 
     indices = ((0, 1, 2), (2, 1, 3))
 
@@ -118,12 +125,17 @@ class Draw(object):
                 shader.bind()
                 # cls.update_config()
                 shader.uniform_float("ViewInv", cls.config["inv_view_matrix"])
-
+                #
+                shader.uniform_float(
+                    "LightPos", cls.config["light_pos"])
+                shader.uniform_float(
+                    "LightColor", cls.config["light_color"])
                 shader.uniform_float("PersInv", inv_pers)
                 shader.uniform_float("Size", (WIDTH, HEIGHT))
                 shader.uniform_float("CamLoc", cls.config["cam"])
                 # shader.uniform_float("LightLoc", cls.config["light"])
-                shader.uniform_bool("IsPers", (cls.config["is_perspective"], ))
+                shader.uniform_bool(
+                    "IsPers", (cls.config["is_perspective"],))
 
                 batch = batch_for_shader(shader,
                                          'TRIS', {"pos": vertices},
@@ -177,8 +189,13 @@ class Draw(object):
             cls.shader.uniform_float("PersInv", cls.config["inv_pers_matrix"])
             cls.shader.uniform_float("Size", (width, height))
             cls.shader.uniform_float("CamLoc", cls.config["cam"])
+            cls.shader.uniform_float(
+                "LightPos", cls.config["light_pos"])
+            cls.shader.uniform_float(
+                "LightColor", cls.config["light_color"])
             # cls.shader.uniform_float("LightLoc", cls.config["light"])
-            cls.shader.uniform_bool("IsPers", (cls.config["is_perspective"], ))
+            cls.shader.uniform_bool(
+                "IsPers", (cls.config["is_perspective"],))
             vertices = ((0, 0), (width, 0), (0, height), (width, height))
             batch = batch_for_shader(cls.shader,
                                      'TRIS', {"pos": vertices},
