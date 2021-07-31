@@ -1,5 +1,4 @@
 import bpy
-import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
 import math
@@ -403,7 +402,8 @@ class Draw(object):
         percent = render.resolution_percentage * 0.01
         WIDTH = round(render.resolution_x * percent)
         HEIGHT = round(render.resolution_y * percent)
-
+        viewport_info = gpu.state.viewport_get()
+        # WIDTH, HEIGHT = viewport_info[2], viewport_info[3]
         offscreen = gpu.types.GPUOffScreen(WIDTH, HEIGHT)
 
         screen = bpy.context.window.screen
@@ -414,18 +414,19 @@ class Draw(object):
                         region3d = area.spaces[0].region_3d
                         w_matrix = region3d.window_matrix.copy()
                         v_matrix = region3d.view_matrix
-        if w_matrix[1][1] / w_matrix[0][0] > WIDTH / HEIGHT:
+        if w_matrix[1][1] / w_matrix[0][0] < WIDTH / HEIGHT:
             w_matrix[1][1] = w_matrix[0][0] * WIDTH / HEIGHT
         else:
             w_matrix[0][0] = w_matrix[1][1] * HEIGHT / WIDTH
         inv_pers = (w_matrix @ v_matrix).inverted().transposed()
 
         with offscreen.bind():
-            bgl.glClearColor(0.2, 0.2, 0.2, 1.0)
-            bgl.glClear(bgl.GL_COLOR_BUFFER_BIT)
+            fb = gpu.state.active_framebuffer_get()
+            fb.clear(color=(0.2, 0.2, 0.2, 1.0))
+         
 
-            version = bgl.glGetString(bgl.GL_VERSION)
-            print(version)
+            #version = bgl.glGetString(bgl.GL_VERSION)
+            #print(version)
             with gpu.matrix.push_pop():
                 # reset matrices -> use normalized device coordinates [-1, 1]
                 # gpu.matrix.load_matrix(mathutils.Matrix.Identity(4))
@@ -459,10 +460,7 @@ class Draw(object):
 
                 batch.draw(shader)
 
-            buffer = bgl.Buffer(bgl.GL_FLOAT, WIDTH * HEIGHT * 4)
-            bgl.glReadBuffer(bgl.GL_BACK)
-            bgl.glReadPixels(0, 0, WIDTH, HEIGHT, bgl.GL_RGBA, bgl.GL_FLOAT,
-                             buffer)
+            buffer = fb.read_color(0, 0, WIDTH, HEIGHT, 4, 0, 'FLOAT')
 
         offscreen.free()
 
@@ -470,6 +468,7 @@ class Draw(object):
             bpy.data.images.new(IMAGE_NAME, WIDTH, HEIGHT)
         image = bpy.data.images[IMAGE_NAME]
         image.scale(WIDTH, HEIGHT)
+        buffer.dimensions = WIDTH * HEIGHT * 4
         image.pixels.foreach_set(buffer)
 
     glsl_nodes = NodeList()
@@ -487,12 +486,14 @@ class Draw(object):
         # print(cls.glsl_nodes.glsl_func_text)
         # print(cls.glsl_nodes.glsl_sdf_text)
 
+        cls.frag_shader_code = cls.f_1 + cls.glsl_nodes.glsl_func_text + \
+            cls.f_2 + cls.glsl_nodes.glsl_sdf_text + cls.f_3
+
         cls.shader = gpu.types.GPUShader(
-            cls.v_, cls.f_1 + cls.glsl_nodes.glsl_func_text + cls.f_2 +
-            cls.glsl_nodes.glsl_sdf_text + cls.f_3)
+            cls.v_, cls.frag_shader_code)
 
         def draw():
-            bgl.glEnable(bgl.GL_BLEND)
+            gpu.state.blend_set("ALPHA")
             cls.shader.bind()
             cls.update_config()
             [width, height] = cls.config["size"]

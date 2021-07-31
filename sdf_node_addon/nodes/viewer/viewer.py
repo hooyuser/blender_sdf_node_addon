@@ -3,13 +3,15 @@ from ...base_types.base_node import CustomNode
 from ...redrawViewport import Draw
 
 
-class HelloWorldOperator(bpy.types.Operator):
-    bl_idname = "wm.hello_world"
+class OutputGLSLOperator(bpy.types.Operator):
+
+    bl_idname = "wm.output_glsl"
     bl_label = "Minimal Operator"
 
     def execute(self, context):
-        Draw.render(context)
-        print("Hello World")
+        sdf_text = bpy.data.texts.new("sdf.glsl")
+        sdf_text.clear()
+        sdf_text.write(Draw.frag_shader_code)
         return {'FINISHED'}
 
 
@@ -40,12 +42,12 @@ class ViewerNode(bpy.types.Node, CustomNode):
             context.scene.sdf_node_data.active_collider = ''
 
     enabled_show: bpy.props.BoolProperty(name="Enabled_show",
-                                          default=False,
-                                          update=update_show)
+                                         default=False,
+                                         update=update_show)
 
     enabled_collision: bpy.props.BoolProperty(name="Enabled_collision",
-                                               default=False,
-                                               update=update_collision)
+                                              default=False,
+                                              update=update_collision)
 
     def update(self):  # rewrite update function
         if not self.inputs[
@@ -55,12 +57,7 @@ class ViewerNode(bpy.types.Node, CustomNode):
     def draw_buttons(self, context, layout):
         layout.prop(self, "enabled_show", text="Show SDF")
         layout.prop(self, "enabled_collision", text="Collision")
-        layout.operator("wm.hello_world", text='Render')
-
-    # def update(self):
-    #     if self.inputs[0].links:
-    #         Draw.refreshViewport(False)
-    #         Draw.refreshViewport(True)
+        layout.operator("wm.output_glsl", text='Output GLSL')
 
     def init(self, context):
         self.inputs.new('NodeSocketFloat', "SDF")

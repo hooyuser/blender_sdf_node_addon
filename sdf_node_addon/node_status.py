@@ -24,6 +24,14 @@ class Status(object):
         return False
 
     @staticmethod
+    def sdf_node_trees():
+        node_tree_list = []
+        for node_tree in bpy.data.node_groups:
+            if node_tree.bl_idname == 'SDFNodeTree':
+                node_tree_list.append(node_tree)
+        return node_tree_list
+
+    @staticmethod
     def exist_viewer():
         for node_tree in bpy.data.node_groups:
             if node_tree.bl_idname == 'SDFNodeTree':

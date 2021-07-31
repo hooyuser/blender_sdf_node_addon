@@ -14,30 +14,33 @@
 import sys
 import os
 bundle_path = os.path.join(os.path.dirname(__file__), 'bundle_packages')
-# sys.path.append("./bundle_packages")
 if bundle_path not in sys.path:
         sys.path.insert(0, bundle_path)
 
 import bpy
+from bpy.app.handlers import persistent
+
 import nodeitems_utils
 
 import os
 import atexit
 
-#import taichi as ti
+import taichi as ti
 
 from . import auto_load
+from .node_UI import menu_func
 from .redrawViewport import Draw
-from .node_status import SdfNodeProps
+from .node_status import SdfNodeProps, Status
 from .physics.physics_status import SdfPhyProps
 from .physics.PBD_stretch_bend import temp
+
 
 bl_info = {
     "name": "sdf node",
     "author": "DerivedCat",
     "description": "",
-    "blender": (2, 90, 0),
-    "version": (0, 0, 2),
+    "blender": (3, 00, 0),
+    "version": (0, 0, 3),
     "location": "",
     "warning": "",
     "category": "Generic"
@@ -161,26 +164,37 @@ node_categories = [
 
 auto_load.init()
 
+def disable_sdf():
+    for node_tree in Status.sdf_node_trees():
+        for node in node_tree.nodes:
+            if node.bl_idname == 'Viewer':
+                node.enabled_show = False
+
+@persistent
+def load_handler(dummy):
+    disable_sdf()
+
 
 def register():
     auto_load.register()
     nodeitems_utils.register_node_categories("CUSTOM_NODES", node_categories)
-
+    
     bpy.types.Scene.sdf_physics = bpy.props.PointerProperty(type=SdfPhyProps)
     bpy.types.Scene.sdf_node_data = bpy.props.PointerProperty(
         type=SdfNodeProps)
 
+    bpy.app.handlers.load_post.append(load_handler)
+    disable_sdf()
+
 
 def unregister():
-
-    
-
     Draw.refreshViewport(False)
 
     auto_load.unregister()
     nodeitems_utils.unregister_node_categories("CUSTOM_NODES")
 
     del bpy.types.Scene.sdf_physics
+    del bpy.types.Scene.sdf_node_data
     try:
         os.remove(temp.name)
     except FileNotFoundError:
@@ -198,4 +212,7 @@ atexit.register(cleanup_temp)
 
 if __name__ == '__main__':
     register()
-    import taichi as ti
+    
+
+
+
