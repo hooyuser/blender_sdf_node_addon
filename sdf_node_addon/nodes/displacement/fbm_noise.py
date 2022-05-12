@@ -55,10 +55,10 @@ class FbmNoiseNode(bpy.types.Node, CustomNode):
         self.inputs.new('SdfNodeSocketFloat', "Y Offset")
         self.inputs.new('SdfNodeSocketFloat', "Z Offset")
 
-        self.inputs.new('NodeSocketFloat', "SDF")
+        self.inputs.new('SdfNodeSocketSdf', "SDF")
         self.inputs['SDF'].hide_value = True
 
-        self.outputs.new('NodeSocketFloat', "SDF")
+        self.outputs.new('SdfNodeSocketSdf', "SDF")
 
         self.width = 174
 

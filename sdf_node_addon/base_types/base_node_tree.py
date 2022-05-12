@@ -13,3 +13,6 @@ class SDFNodeTree(bpy.types.NodeTree):
     # the icon that will be displayed in the UI
     # NOTE: check the blender dev plugins to see icons in text editor
     bl_icon = 'SCRIPTPLUGINS'
+
+    # def update(self):
+    #     print('node tree changed', self)

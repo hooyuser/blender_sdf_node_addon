@@ -10,12 +10,12 @@ class OperateNode(bpy.types.Node, CustomNode):
     bl_icon = 'MODIFIER'
 
     def init(self, context):
-        self.inputs.new('NodeSocketFloat', "SDF")
+        self.inputs.new('SdfNodeSocketSdf', "SDF")
         self.inputs[0].hide_value = True
 
         self.inputs.new('SdfNodeSocketOperation', "Operation")
 
-        self.outputs.new('NodeSocketFloat', "SDF")
+        self.outputs.new('SdfNodeSocketSdf', "SDF")
 
     def gen_glsl(self):
 

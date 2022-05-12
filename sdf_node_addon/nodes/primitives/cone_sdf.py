@@ -19,7 +19,7 @@ class ConeSDFNode(bpy.types.Node, CustomNode):
 
         self.inputs.new('SdfNodeSocketVectorTranslation', "Location")
 
-        self.outputs.new('NodeSocketFloat', "SDF")
+        self.outputs.new('SdfNodeSocketSdf', "SDF")
 
     def gen_glsl_func(self):
         loc = self.inputs[2].default_value

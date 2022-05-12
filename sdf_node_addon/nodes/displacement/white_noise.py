@@ -18,10 +18,10 @@ class WhiteNoiseNode(bpy.types.Node, CustomNode):
         self.inputs.new('SdfNodeSocketFloat', "Y Offset")
         self.inputs.new('SdfNodeSocketFloat', "Z Offset")
 
-        self.inputs.new('NodeSocketFloat', "SDF")
+        self.inputs.new('SdfNodeSocketSdf', "SDF")
         self.inputs[5].hide_value = True
 
-        self.outputs.new('NodeSocketFloat', "SDF")
+        self.outputs.new('SdfNodeSocketSdf', "SDF")
 
     def gen_glsl_func(self):
         if self.inputs[5].links:

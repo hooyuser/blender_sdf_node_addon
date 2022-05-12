@@ -6,6 +6,7 @@ from ..physics.PBD_stretch_bend import TiClothSimulation
 
 class BaseNodeSocket(object):
     def default_value_callback(self, context):
+        # print("node socket changed", self.name, self.default_value)
         Draw.update_callback(update_node=self.node)
         TiClothSimulation.sdf_para_changed = True
 
@@ -145,7 +146,7 @@ class SdfNodeSocketColor(bpy.types.NodeSocket, BaseNodeSocket):
             col.prop(self, "default_value", text=text)
 
     def draw_color(self, context, node):
-        return (0.7, 0.6, 0.3, 1)
+        return (0.8, 0.5, 0.6, 1)
 
 
 class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket, BaseNodeSocket):
@@ -190,15 +191,15 @@ class SdfNodeSocketEuler(bpy.types.NodeSocket, BaseNodeSocket):
         return (0.3, 0.7, 0.45, 1)
 
 
-class SdfNodeSocketSd(bpy.types.NodeSocket):
-    bl_idname = "SdfNodeSocketSd"
-    bl_label = "SdfNodeSocketSd"
+class SdfNodeSocketSdf(bpy.types.NodeSocket, BaseNodeSocket):
+    bl_idname = "SdfNodeSocketSdf"
+    bl_label = "Sdf Node Socket Sdf"
 
     def draw(self, context, layout, node, text):
         layout.label(text='SDF')
 
     def draw_color(self, context, node):
-        return (0.5, 0.5, 0.5, 1)
+        return (0.62, 0.62, 0.62, 1)
 
 
 class SdfNodeSocketOperation(bpy.types.NodeSocket, BaseNodeSocket):

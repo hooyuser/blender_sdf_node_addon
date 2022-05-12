@@ -41,13 +41,13 @@ class SmoothBoolNode(bpy.types.Node, CustomNode):
         self.inputs.new('SdfNodeSocketPositiveFloat', "Smoothness")
         self.inputs[0].default_value = 0.25
 
-        self.inputs.new('NodeSocketFloat', "SDF 1")
+        self.inputs.new('SdfNodeSocketSdf', "SDF 1")
         self.inputs[1].hide_value = True
 
-        self.inputs.new('NodeSocketFloat', "SDF 2")
+        self.inputs.new('SdfNodeSocketSdf', "SDF 2")
         self.inputs[2].hide_value = True
 
-        self.outputs.new('NodeSocketFloat', "SDF")
+        self.outputs.new('SdfNodeSocketSdf', "SDF")
 
         self.width = 147
 

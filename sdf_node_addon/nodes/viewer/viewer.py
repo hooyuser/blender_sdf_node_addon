@@ -64,7 +64,7 @@ class ViewerNode(bpy.types.Node, CustomNode):
         layout.operator("wm.output_glsl", text='Output GLSL')
 
     def init(self, context):
-        self.inputs.new('NodeSocketFloat', "SDF")
+        self.inputs.new('SdfNodeSocketSdf', "SDF")
         self.inputs[0].hide_value = True
 
     def free(self):

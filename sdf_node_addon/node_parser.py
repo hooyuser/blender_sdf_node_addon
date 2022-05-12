@@ -68,6 +68,7 @@ class NodeList(object):
 
             for node in self.node_list:
                 self.glsl_func_list.append(node.gen_glsl_func())
+                print(node.gen_glsl_uniform())
             self.glsl_p_list.reverse()
 
             self.glsl_sdf_text = f'''

@@ -17,10 +17,10 @@ class TransformNode(bpy.types.Node, CustomNode):
         self.inputs.new('SdfNodeSocketFloat', "Scale")
         self.inputs[2].default_value = 1
 
-        self.inputs.new('NodeSocketFloat', "SDF")
+        self.inputs.new('SdfNodeSocketSdf', "SDF")
         self.inputs[3].hide_value = True
 
-        self.outputs.new('NodeSocketFloat', "SDF")
+        self.outputs.new('SdfNodeSocketSdf', "SDF")
 
     def gen_glsl_func(self):
         me = self.index

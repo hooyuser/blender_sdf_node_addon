@@ -58,7 +58,8 @@ def gen_sdf_taichi():
     if collision_tree:
         coll_node = bpy.context.scene.sdf_node_data.active_collider
         if coll_node:
-            coll_nodes.gen_collision_node_list(collision_tree.nodes[coll_node])
+            coll_nodes.gen_collision_node_list(
+                collision_tree.nodes[coll_node])
             taichi_sdf_codes = f'''
 import bpy
 import taichi as ti
@@ -244,7 +245,7 @@ class TiClothSimulation:
         self.frame_num = bpy.context.scene.frame_end
         for i in range(self.vertex_num):
             self.x[i] = ti.Vector(list(self.bm.verts[i].co))
-            self.v[i] = 0
+            self.v[i] = ti.Vector([0, 0, 0])
 
 ###############################################################################
 
@@ -382,7 +383,6 @@ class TiClothSimulation:
             if self.w[vi] > eps:
                 sdf_mod.update_p_by_collision(self, vi)
 
-
     @ti.kernel
     def substep_analytical(self):
         self.predict_pos()
@@ -392,7 +392,7 @@ class TiClothSimulation:
                 self.project_constraints(n)
 
         self.update_pos()
- 
+
 ###############################################################################
 # Animate
 ###############################################################################

@@ -22,10 +22,10 @@ class ArrayNode(bpy.types.Node, CustomNode):
         self.inputs.new('SdfNodeSocketPositiveInt', "z num")
         self.inputs[3].default_value = 1
 
-        self.inputs.new('NodeSocketFloat', "SDF")
+        self.inputs.new('SdfNodeSocketSdf', "SDF")
         self.inputs[4].hide_value = True
 
-        self.outputs.new('NodeSocketFloat', "SDF")
+        self.outputs.new('SdfNodeSocketSdf', "SDF")
 
     def gen_glsl_func(self):
         if self.inputs[4].links:

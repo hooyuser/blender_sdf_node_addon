@@ -19,10 +19,10 @@ class PBRMaterialNode(bpy.types.Node, CustomNode, BaseMaterialNode):
         self.inputs.new('SdfNodeSocketFloat', "Specular")
         self.inputs[3].default_value = 0.5
 
-        self.inputs.new('NodeSocketFloat', "SDF")
+        self.inputs.new('SdfNodeSocketSdf', "SDF")
         self.inputs[-1].hide_value = True
 
-        self.outputs.new('NodeSocketFloat', "SDF")
+        self.outputs.new('SdfNodeSocketSdf', "SDF")
 
     def gen_glsl_func(self):
         return ''

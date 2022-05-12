@@ -13,10 +13,10 @@ class BendNode(bpy.types.Node, CustomNode):
         self.inputs.new('SdfNodeSocketFloat', "Intensity")
         self.inputs[0].default_value = 0
 
-        self.inputs.new('NodeSocketFloat', "SDF")
+        self.inputs.new('SdfNodeSocketSdf', "SDF")
         self.inputs[1].hide_value = True
 
-        self.outputs.new('NodeSocketFloat', "SDF")
+        self.outputs.new('SdfNodeSocketSdf', "SDF")
 
     def gen_glsl_func(self):
         if self.inputs[1].links:

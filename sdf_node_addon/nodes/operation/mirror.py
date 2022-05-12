@@ -25,10 +25,10 @@ class MirrorNode(bpy.types.Node, CustomNode):
         subrow.prop(self, "mirror_axis", index=2, text="Z", toggle=True)
 
     def init(self, context):
-        self.inputs.new('NodeSocketFloat', "SDF")
+        self.inputs.new('SdfNodeSocketSdf', "SDF")
         self.inputs[0].hide_value = True
 
-        self.outputs.new('NodeSocketFloat', "SDF")
+        self.outputs.new('SdfNodeSocketSdf', "SDF")
 
     def gen_glsl_func(self):
         if self.inputs[0].links:

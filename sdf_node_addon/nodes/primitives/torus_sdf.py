@@ -19,7 +19,7 @@ class TorusSDFNode(bpy.types.Node, CustomNode):
 
         self.inputs.new('SdfNodeSocketVectorTranslation', "Location")
 
-        self.outputs.new('NodeSocketFloat', "SDF")
+        self.outputs.new('SdfNodeSocketSdf', "SDF")
 
         self.width = 153
 

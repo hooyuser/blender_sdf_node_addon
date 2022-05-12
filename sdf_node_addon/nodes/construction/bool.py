@@ -38,13 +38,13 @@ class BoolNode(bpy.types.Node, CustomNode):
         return self.operationLabels[self.operation]
 
     def init(self, context):
-        self.inputs.new('NodeSocketFloat', "SDF 1")
+        self.inputs.new('SdfNodeSocketSdf', "SDF 1")
         self.inputs[0].hide_value = True
 
-        self.inputs.new('NodeSocketFloat', "SDF 2")
+        self.inputs.new('SdfNodeSocketSdf', "SDF 2")
         self.inputs[1].hide_value = True
 
-        self.outputs.new('NodeSocketFloat', "SDF")
+        self.outputs.new('SdfNodeSocketSdf', "SDF")
 
     def gen_glsl_func(self):
 
