@@ -1,4 +1,9 @@
 # Blender SDF Node Addon
+
+![Code size](https://img.shields.io/github/languages/code-size/hooyuser/blender_sdf_node_addon)
+![Repo size](https://img.shields.io/github/repo-size/hooyuser/blender_sdf_node_addon)
+![Lines of code](https://tokei.rs/b1/github/hooyuser/blender_sdf_node_addon)
+
 This addon provides **SDF Node System** for **SDF Rendering** and physics simulation with **SDF Collision**. 
 
 SDF refers to signed distance field. You may find lots of impressive content to do with SDF on this website https://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm.
