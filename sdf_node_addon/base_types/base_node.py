@@ -23,14 +23,15 @@ class CustomNode(object):
 
     def update(self):
         if self.outputs:
-            tree = bpy.context.space_data.edit_tree
-            if self.outputs[0].links:
-                for link in self.outputs[0].links:
-                    to_node = link.to_node
-                    if link.to_socket.bl_idname != 'SdfNodeSocketSdf':
-                        tree.links.remove(link)
-                        tree.links.new(self.outputs[0],
-                                       to_node.inputs[-1]).is_valid = True
+            if hasattr(bpy.context.space_data, 'edit_tree'):
+                tree = bpy.context.space_data.edit_tree
+                if self.outputs[0].links:
+                    for link in self.outputs[0].links:
+                        to_node = link.to_node
+                        if link.to_socket.bl_idname != 'SdfNodeSocketSdf':
+                            tree.links.remove(link)
+                            tree.links.new(self.outputs[0],
+                                           to_node.inputs[-1]).is_valid = True
         Draw.update_callback()
         #gen_sdf_taichi()
 

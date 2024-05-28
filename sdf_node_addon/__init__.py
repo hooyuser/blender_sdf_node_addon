@@ -196,7 +196,7 @@ def unregister():
     auto_load.unregister()
     nodeitems_utils.unregister_node_categories("CUSTOM_NODES")
 
-    del bpy.types.Scene.sdf_physics
+    #del bpy.types.Scene.sdf_physics
     del bpy.types.Scene.sdf_node_data
     # try:
     #     os.remove(temp.name)

@@ -11,7 +11,6 @@ void main()
 '''
 
 light_num = 1
-sdf_num = 8
 mat_pbr_num = 1
 
 f_1 = f'''
