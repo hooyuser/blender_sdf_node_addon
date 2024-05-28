@@ -23,8 +23,8 @@ import atexit
 from . import auto_load
 from .redrawViewport import Draw
 from .node_status import SdfNodeProps, Status
-from .physics.physics_status import SdfPhyProps
-from .physics.temp_taichi_code import temp
+# from .physics.physics_status import SdfPhyProps
+# from .physics.temp_taichi_code import temp
 
 bundle_path = os.path.join(os.path.dirname(__file__), 'bundle_packages')
 if bundle_path not in sys.path:
@@ -181,7 +181,7 @@ def register():
     auto_load.register()
     nodeitems_utils.register_node_categories("CUSTOM_NODES", node_categories)
 
-    bpy.types.Scene.sdf_physics = bpy.props.PointerProperty(type=SdfPhyProps)
+    # bpy.types.Scene.sdf_physics = bpy.props.PointerProperty(type=SdfPhyProps)
     bpy.types.Scene.sdf_node_data = bpy.props.PointerProperty(
         type=SdfNodeProps)
 
@@ -198,20 +198,20 @@ def unregister():
 
     del bpy.types.Scene.sdf_physics
     del bpy.types.Scene.sdf_node_data
-    try:
-        os.remove(temp.name)
-    except FileNotFoundError:
-        print(temp.name + ' not found!')
+    # try:
+    #     os.remove(temp.name)
+    # except FileNotFoundError:
+    #     print(temp.name + ' not found!')
 
 
-def cleanup_temp():
-    try:
-        os.remove(temp.name)
-    except FileNotFoundError:
-        print(temp.name + ' not found!')
+# def cleanup_temp():
+#     try:
+#         os.remove(temp.name)
+#     except FileNotFoundError:
+#         print(temp.name + ' not found!')
 
 
-atexit.register(cleanup_temp)
+# atexit.register(cleanup_temp)
 
 if __name__ == '__main__':
     register()

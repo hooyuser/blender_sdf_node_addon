@@ -68,7 +68,7 @@ class NodeList(object):
 
             for node in self.node_list:
                 self.glsl_func_list.append(node.gen_glsl_func())
-                print(node.gen_glsl_uniform())
+                #print(node.gen_glsl_uniform())
             self.glsl_p_list.reverse()
 
             self.glsl_sdf_text = f'''
@@ -111,7 +111,7 @@ class NodeList(object):
     return 1e19'''
 
     def update_glsl_func(self, node):
-        if self.node_list:
+        if self.node_list and node in self.node_list:
             self.glsl_func_list[node.index] = node.gen_glsl_func()
             self.glsl_func_text = ''.join(self.glsl_func_list)
             # inspect.cleandoc(self.glsl_sdf_text)

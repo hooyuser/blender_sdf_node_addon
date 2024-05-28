@@ -1,4 +1,4 @@
-import tempfile
+# import tempfile
 
-temp = tempfile.NamedTemporaryFile(suffix='.py', delete=False)
-temp.close()
+# temp = tempfile.NamedTemporaryFile(suffix='.py', delete=False)
+# temp.close()

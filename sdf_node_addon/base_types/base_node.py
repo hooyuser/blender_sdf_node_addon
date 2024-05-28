@@ -1,6 +1,6 @@
 import bpy
 from ..redrawViewport import Draw
-from ..physics.PBD_stretch_bend import gen_sdf_taichi
+# from ..physics.gen_taichi_code import gen_sdf_taichi
 
 
 class CustomNode(object):
@@ -32,7 +32,7 @@ class CustomNode(object):
                         tree.links.new(self.outputs[0],
                                        to_node.inputs[-1]).is_valid = True
         Draw.update_callback()
-        gen_sdf_taichi()
+        #gen_sdf_taichi()
 
         # self.last_update = self
 

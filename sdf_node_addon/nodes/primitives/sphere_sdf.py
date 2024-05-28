@@ -27,7 +27,7 @@ class SphereSDFNode(bpy.types.Node, CustomNode):
             self.inputs[1].default_value[1], self.inputs[1].default_value[2]
         ][idx]
 
-    gen_glsl_uniform = gen_glsl_uniform_helper(self)
+    #gen_glsl_uniform = gen_glsl_uniform_helper(self)
 
     def gen_glsl_func(self):
         loc = self.inputs[1].default_value
