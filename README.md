@@ -12,7 +12,7 @@ SDF refers to signed distance field. You may find lots of impressive content to 
 This addon is still work-in-progress. Though the SDF rendering node system is relatively stable, physics simulation may crash your Blender. Since the release version of this addon is targeted on Blender 3.0, I'm not sure whether it can function correctly on Blender 2.9x.
 
 ## Download
-- Addons for Blender 3.0
+- Addons for Blender 4.1
   - Download the [master branch](https://github.com/hooyuser/blender_sdf_node_addon/archive/refs/heads/master.zip) and then copy the `sdf_node_addon` folder to your Blender's `/scripts/addons/` folder directly.
   - Download the [pre-release](https://github.com/hooyuser/blender_sdf_node_addon/releases/download/0.0.3/sdf_node_beta_0_0_3.zip) and install it like any other addons for Blender.
 - Addons for Blender 2.92
