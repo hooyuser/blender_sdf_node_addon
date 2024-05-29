@@ -24,9 +24,19 @@ class SdfNodePanel(bpy.types.Panel):
         layout = self.layout
 
         row = layout.row()
-        row.label(text=f'Active Viewer: {sdf_node_data.active_viewer}')
+        row.label(text=f'Active Viewer: {sdf_node_data.active_viewer if sdf_node_data.active_viewer else "None"}')
         row = layout.row()
-        row.label(text=f'Active Collider: {sdf_node_data.active_collider}')
+        row.label(text=f'Active Collider: {sdf_node_data.active_collider if sdf_node_data.active_collider else "None"}')
+        row = layout.row()
+        if sdf_node_data.material_nodes == '':
+            row.label(text=f'Active Materials: None')
+        else:
+            row.label(text=f'Active Materials:')
+            material_names = sdf_node_data.material_nodes.split('|')
+            for material_name in material_names:
+                row = layout.row()
+                row.label(text=f'\t - {material_name}')
+
 
 
 class ViewportRenderOperator(bpy.types.Operator):

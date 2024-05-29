@@ -10,6 +10,9 @@ class SdfNodeProps(bpy.types.PropertyGroup):
                                             update=update_active_viewer)
     active_collider: bpy.props.StringProperty(name="Active Collider")
 
+    material_nodes: bpy.props.StringProperty(name="Active Viewer",
+                                            update=update_active_viewer)
+
 
 class Status(object):
     active_nodetree = None  # bpy.context.space_data.edit_tree

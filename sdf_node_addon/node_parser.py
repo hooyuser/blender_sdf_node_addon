@@ -46,7 +46,7 @@ class NodeList(object):
             if node.index > -2:
                 node.index = -1
                 node.ref_num = 0
-        self.followLinks(node_in, self.gen_glsl_list)
+        self.follow_links(node_in, self.gen_glsl_list)
 
     def gen_coll_node_info(self, node_in):
         """
@@ -116,7 +116,7 @@ class NodeList(object):
             self.glsl_func_text = ''.join(self.glsl_func_list)
             # inspect.cleandoc(self.glsl_sdf_text)
 
-    def followLinks(self, node_in, operation):
+    def follow_links(self, node_in, operation):
 
         for n_inputs in node_in.inputs:
             for node_link in n_inputs.links:
@@ -125,16 +125,16 @@ class NodeList(object):
                     # for all input nodes
                     node = node_link.from_node
                     if node.index > -2:
-                        self.followLinks(node, operation)
+                        self.follow_links(node, operation)
 
                         if node.index < 0:
                             node.index = len(self.node_list)
                             self.node_list.append(node)
                             self.ref_stacks.append([0])
                             if node.bl_idname[-8:] == "Material":
-                                node.material_id = len(
-                                    self.material_node_list)
                                 self.material_node_list.append(node)
+                                node.material_id = len(self.material_node_list)
+
 
                         else:
                             node.ref_num += 1

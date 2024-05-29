@@ -1,14 +1,16 @@
 import bpy
 
 from ..redrawViewport import Draw
-#from ..physics.PBD_stretch_bend import TiClothSimulation
+
+
+# from ..physics.PBD_stretch_bend import TiClothSimulation
 
 
 class BaseNodeSocket(object):
     def default_value_callback(self, context):
         # print("node socket changed", self.name, self.default_value)
         Draw.update_callback(update_node=self.node)
-        #TiClothSimulation.sdf_para_changed = True
+        # TiClothSimulation.sdf_para_changed = True
 
 
 #     socket_types = [("FLOAT", "Float", "Where your feet are"),
@@ -109,8 +111,25 @@ class SdfNodeSocketPositiveFloat(bpy.types.NodeSocket, BaseNodeSocket):
         return (0.643, 0.788, 0.824, 1)
 
 
-class SdfNodeSocketFloatVector(bpy.types.NodeSocket, BaseNodeSocket):
+class SdfNodeSocketNormalizedFloat(bpy.types.NodeSocket, BaseNodeSocket):
+    bl_idname = "SdfNodeSocketNormalizedFloat"
+    bl_label = "SDF Node Socket Normalized Float"
 
+    default_value: bpy.props.FloatProperty(
+        soft_min=0.0, soft_max=1.0, update=BaseNodeSocket.default_value_callback)
+
+    # Optional function for drawing the socket input value
+    def draw(self, context, layout, node, text):
+        if self.is_output or self.is_linked:
+            layout.label(text=self.name)
+        else:
+            layout.prop(self, "default_value", text=self.name)
+
+    def draw_color(self, context, node):
+        return (0.643, 0.788, 0.824, 1)
+
+
+class SdfNodeSocketFloatVector(bpy.types.NodeSocket, BaseNodeSocket):
     bl_idname = "SdfNodeSocketFloatVector"
     bl_label = "SDF Node Socket Float Vector"
 
@@ -130,12 +149,15 @@ class SdfNodeSocketFloatVector(bpy.types.NodeSocket, BaseNodeSocket):
 
 
 class SdfNodeSocketColor(bpy.types.NodeSocket, BaseNodeSocket):
-
     bl_idname = "SdfNodeSocketColor"
     bl_label = "SDF Node Socket Color"
 
-    default_value: bpy.props.FloatVectorProperty(default=(1.0, 1.0, 1.0),
-        subtype='COLOR', update=BaseNodeSocket.default_value_callback)
+    default_value: bpy.props.FloatVectorProperty(
+        subtype='COLOR',
+        default=(1.0, 1.0, 1.0),
+        min=0.0,
+        max=1.0,
+        update=BaseNodeSocket.default_value_callback)
 
     # Optional function for drawing the socket input value
     def draw(self, context, layout, node, text):
@@ -150,7 +172,6 @@ class SdfNodeSocketColor(bpy.types.NodeSocket, BaseNodeSocket):
 
 
 class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket, BaseNodeSocket):
-
     bl_idname = "SdfNodeSocketVectorTranslation"
     bl_label = "SDF Node Socket Vector Translation"
 
@@ -170,7 +191,6 @@ class SdfNodeSocketVectorTranslation(bpy.types.NodeSocket, BaseNodeSocket):
 
 
 class SdfNodeSocketEuler(bpy.types.NodeSocket, BaseNodeSocket):
-
     bl_idname = "SdfNodeSocketEuler"
     bl_label = "SDF Node Socket Euler"
 

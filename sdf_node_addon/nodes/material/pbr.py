@@ -13,10 +13,13 @@ class PBRMaterialNode(bpy.types.Node, CustomNode, BaseMaterialNode):
 
     def init(self, context):
         self.inputs.new('SdfNodeSocketColor', "Base Color")
-        self.inputs.new('SdfNodeSocketFloat', "Metalness")
-        self.inputs.new('SdfNodeSocketFloat', "Roughness")
+
+        self.inputs.new('SdfNodeSocketNormalizedFloat', "Metalness")
+
+        self.inputs.new('SdfNodeSocketNormalizedFloat', "Roughness")
         self.inputs[2].default_value = 0.5
-        self.inputs.new('SdfNodeSocketFloat', "Specular")
+
+        self.inputs.new('SdfNodeSocketNormalizedFloat', "Specular")
         self.inputs[3].default_value = 0.5
 
         self.inputs.new('SdfNodeSocketSdf', "SDF")
@@ -38,13 +41,21 @@ class PBRMaterialNode(bpy.types.Node, CustomNode, BaseMaterialNode):
             glsl_p = f'''
     vec3 p_{last}_{last_ref} = p_{me}_{ref_i};
 '''
+            #             glsl_d = f'''
+            #     SDFInfo d_{me}_{ref_i} = SDFInfo(d_{last}_{last_ref}.sd, {self.material_id});
+            # '''
             glsl_d = f'''
-    SDFInfo d_{me}_{ref_i} = SDFInfo(d_{last}_{last_ref}.sd, {self.material_id});
+    SDFInfo d_{me}_{ref_i} = SDFInfo(d_{last}_{last_ref}.sd, {self.material_id}); 
 '''
         else:
             glsl_p = ''
             glsl_d = f'''
-                float d_{me}_{ref_i} = 2.0 * MAX_DIST;
+                SDFInfo d_{me}_{ref_i} = SDFInfo(2.0 * MAX_DIST, 0);
             '''
 
         return glsl_p, glsl_d
+
+    def gen_glsl_material(self):
+
+        r, g, b = self.inputs[0].default_value
+        return f'PBRMaterial(vec3({r}, {g}, {b}), {self.inputs[1].default_value}, {self.inputs[2].default_value}, {self.inputs[3].default_value})'

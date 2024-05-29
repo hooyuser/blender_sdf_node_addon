@@ -11,9 +11,14 @@ void main()
 '''
 
 light_num = 1
-mat_pbr_num = 1
 
-f_1 = f'''
+
+def gen_fragment_shader_code(glsl_func_text, glsl_sdf_text, glsl_materials):
+    default_material = 'PBRMaterial(vec3(0.9, 0.25, 0.1), 0.0, 0.5, 0.5)'  # default material
+    pbr_materials = [default_material] + glsl_materials
+    pbr_material_code = ',\n    '.join(pbr_materials)
+
+    return f'''
 #define PI 3.1415926535
 #define EPSILON 0.0001
 #define UPPER 0.9999
@@ -23,7 +28,7 @@ f_1 = f'''
 #define AMBIENT_ALBEDO 0.15
 
 #define LIGHT_NUM {light_num}
-#define MAT_PBR_NUM {mat_pbr_num}
+#define MAT_PBR_NUM {len(pbr_materials)}
 
 precision highp float;
 
@@ -58,8 +63,9 @@ struct PBRMaterial{{
     float roughness;
     float specular;
 }};
+
 PBRMaterial pbr_mat[MAT_PBR_NUM] = PBRMaterial[MAT_PBR_NUM](
-    PBRMaterial(vec3(0.7, 0.8, 0.5), 0.0, 0.5, 0.5)
+    {pbr_material_code}
 );
 
 
@@ -243,50 +249,47 @@ float simplexNoise3D(vec3 p) {{
     /* 3. return the sum of the four surflets */
     return dot(d, vec4(52.0));
 }}
-'''
+{glsl_func_text}
 
-f_2 = '''
 SDFInfo sceneSDF(vec3 p)
-{
-'''
+{{
+{glsl_sdf_text}
+}}
 
-f_3 = '''
-}
-
-vec3 calcNormal(vec3 p) { // for function f(p)
+vec3 calcNormal(vec3 p) {{ // for function f(p)
     const float h = 0.0001;// replace by an appropriate value
     const vec2 k = vec2(1, -1);
     return normalize(k.xyy*sceneSDF(p + k.xyy*h).sd +
     k.yyx*sceneSDF(p + k.yyx*h).sd +
     k.yxy*sceneSDF(p + k.yxy*h).sd +
     k.xxx*sceneSDF(p + k.xxx*h).sd);
-}
+}}
 
 SDFInfo shortestDistanceToSurface(
     vec3 eye, vec3 marchingDirection, float start, float end)
-{
+{{
     float marching_dist=start;
     SDFInfo safe_dist;
     for (int i = 0; i < MAX_MARCHING_STEPS; i++)
-    {
+    {{
         safe_dist = sceneSDF(eye + marching_dist * marchingDirection);
         if (safe_dist.sd < EPSILON)
-        {
+        {{
             safe_dist.sd = marching_dist;
             return safe_dist;
-        }
+        }}
         marching_dist += safe_dist.sd;
         if (marching_dist >= end)
-        {
+        {{
             safe_dist.sd = marching_dist;
             return safe_dist;
-        }
-    }
+        }}
+    }}
     safe_dist.sd = end; // may be not the truth
     return safe_dist;
-}
+}}
 
-vec3 objectPBRLighting(int light_idx, vec3 p, vec3 v, vec3 n, PBRMaterial mat) {
+vec3 objectPBRLighting(int light_idx, vec3 p, vec3 v, vec3 n, PBRMaterial mat) {{
     vec3 baseColor = mat.baseColor;
     float metalness = mat.metalness;
     float roughness = mat.roughness;
@@ -315,60 +318,60 @@ vec3 objectPBRLighting(int light_idx, vec3 p, vec3 v, vec3 n, PBRMaterial mat) {
     vec3 kD = (1. - F) * (1. - metalness);
     vec3 f = kD * baseColor / PI + F * D * Vis;
     return PI * f * LightColor[light_idx] * dotNL / falloffLength;
-}
+}}
 
-vec3 lighting(int light_idx, vec3 p, vec3 v, vec3 n, int mID) {
-    if (mID == 0) {
-        return objectPBRLighting(light_idx, p, v, n, pbr_mat[0]);
-    }
-    else {
+vec3 lighting(int light_idx, vec3 p, vec3 v, vec3 n, int mID) {{
+    if (mID < MAT_PBR_NUM) {{
+        return objectPBRLighting(light_idx, p, v, n, pbr_mat[mID]);
+    }}
+    else {{
         return vec3(0.0);
-    }
-}
+    }}
+}}
 
-vec4 sceneRender(vec3 p, vec3 v, int mID){
+vec4 sceneRender(vec3 p, vec3 v, int mID){{
     vec3 color = vec3(AMBIENT_ALBEDO);
     vec3 n = calcNormal(p);
-    for (int i = 0; i < LIGHT_NUM; ++i) {
+    for (int i = 0; i < LIGHT_NUM; ++i) {{
         color += lighting (i, p, v, n, mID);
-    }
+    }}
     return vec4(color, 1.0);
-}
+}}
 
 vec3 rayDirection(vec2 fragCoord)
-{
+{{
     if (IsPers)
-    {
+    {{
         vec3 outer = vec3((2.0 * fragCoord.x / Size.x) - 1.0,
                         (2.0 * fragCoord.y / Size.y) - 1.0,
                         -0.5);
         float w = dot(outer, PersInv[3].xyz) + PersInv[3][3];
         return normalize((((vec4(outer, 1.0) * PersInv).xyz / w)
             - vec3(ViewInv[0][3],ViewInv[1][3],ViewInv[2][3])));
-    }
+    }}
     else
-    {
+    {{
         return - normalize(vec3(ViewInv[0][2],ViewInv[1][2],ViewInv[2][2]));
-    }
-}
+    }}
+}}
 
 
 void main()
-{
+{{
     vec3 dir = rayDirection(position);
     SDFInfo dist = shortestDistanceToSurface(CamLoc, dir,
         MIN_DIST, MAX_DIST);
 
-    if (dist.sd >= MAX_DIST - EPSILON) {
+    if (dist.sd >= MAX_DIST - EPSILON) {{
         // Didn't hit anything
         fragColor = vec4(0.0, 0.0, 0.0, 0.0);
         fragColor = blender_srgb_to_framebuffer_space(fragColor);
         return;
-    }
+    }}
 
     vec3 p = CamLoc + dist.sd * dir;
 
     fragColor = sceneRender(p, -dir, dist.materialID);
     fragColor = blender_srgb_to_framebuffer_space(fragColor);
-}
+}}
 '''

@@ -21,6 +21,9 @@ def render_size(scene):
 class Draw(object):
     handlers = []
     config = {"size": [0, 0]}
+    glsl_nodes = NodeList()
+    indices = ((0, 1, 2), (2, 1, 3))
+    frag_shader_code: str
 
     @classmethod
     def rot(cls, vec, dtheta, dphi):
@@ -52,10 +55,10 @@ class Draw(object):
                         else:
                             cls.config[
                                 "cam"] = view3d_utils.region_2d_to_origin_3d(
-                                    region,
-                                    region3d,
-                                    [region.width / 2, region.height / 2],
-                                    clamp=10.0)
+                                region,
+                                region3d,
+                                [region.width / 2, region.height / 2],
+                                clamp=10.0)
 
                         # cls.config["light"] = mathutils.Vector(
                         #    cls.rot(cls.config["cam"], 30, -30))
@@ -66,8 +69,6 @@ class Draw(object):
         cls.config["light_color"] = [
             (light.data.energy * light.data.color / 500.0)[j]
             for j in range(3) for light in lights]
-
-    indices = ((0, 1, 2), (2, 1, 3))
 
     @classmethod
     def tag_redraw_all_3dviews(cls):
@@ -120,8 +121,8 @@ class Draw(object):
 
                 shader = gpu.types.GPUShader(
                     shader_base.v_, shader_base.f_1 +
-                    cls.glsl_nodes.glsl_func_text + shader_base.f_2 +
-                    cls.glsl_nodes.glsl_sdf_text + shader_base.f_3)
+                                    cls.glsl_nodes.glsl_func_text + shader_base.f_2 +
+                                    cls.glsl_nodes.glsl_sdf_text + shader_base.f_3)
                 shader.bind()
                 # cls.update_config()
                 shader.uniform_float("ViewInv", cls.config["inv_view_matrix"])
@@ -160,8 +161,6 @@ class Draw(object):
         buffer.dimensions = WIDTH * HEIGHT * 4
         image.pixels.foreach_set(buffer)
 
-    glsl_nodes = NodeList()
-
     @classmethod
     def gen_draw_handler(cls, update_node=False):
 
@@ -175,9 +174,16 @@ class Draw(object):
         # print(cls.glsl_nodes.glsl_func_text)
         # print(cls.glsl_nodes.glsl_sdf_text)
 
-        cls.frag_shader_code = shader_base.f_1 + cls.glsl_nodes.glsl_func_text + \
-            shader_base.f_2 + cls.glsl_nodes.glsl_sdf_text + shader_base.f_3
+        glsl_nodes = cls.glsl_nodes
+        glsl_materials = [mat_node.gen_glsl_material() for mat_node in glsl_nodes.material_node_list]
 
+
+
+        cls.frag_shader_code = shader_base.gen_fragment_shader_code(
+            glsl_nodes.glsl_func_text,
+            glsl_nodes.glsl_sdf_text,
+            glsl_materials
+        )
         cls.shader = gpu.types.GPUShader(shader_base.v_, cls.frag_shader_code)
 
         def draw():
@@ -205,7 +211,13 @@ class Draw(object):
         return draw
 
     @classmethod
-    def refreshViewport(cls, enabled_show, update_node=False):
+    def refreshViewport(cls, enabled_show: bool, update_node=False):
+        """
+        If enabled_show is True, add draw handler to the 3D view. Otherwise, remove draw handler.
+        :param enabled_show: bool
+        :param update_node: bpy.types.Node
+        :return: None
+        """
         if enabled_show:
             if len(cls.handlers) == 0:
                 cls.handlers.append(
@@ -222,6 +234,7 @@ class Draw(object):
 
     @classmethod
     def update_callback(cls, update_node=False):
+
         if update_node and update_node.index <= -2:  # update_node is math node
             update_node.update()
         elif update_node and update_node.index < 0:
