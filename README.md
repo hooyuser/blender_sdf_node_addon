@@ -2,7 +2,7 @@
 
 ![Code size](https://img.shields.io/github/languages/code-size/hooyuser/blender_sdf_node_addon)
 ![Repo size](https://img.shields.io/github/repo-size/hooyuser/blender_sdf_node_addon)
-![Lines of code](https://tokei.rs/b1/github/hooyuser/blender_sdf_node_addon)
+![Lines of Code](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/hooyuser/github-badges/main/badges/hooyuser-blender_sdf_node_addon.json) 
 
 This addon provides **SDF Node System** for **SDF Rendering** and physics simulation with **SDF Collision**. 
 
